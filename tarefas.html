@@ -4,150 +4,406 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tarefas</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: sans-serif; background: #111; color: #e0e0e0; height: 100vh; display: flex; flex-direction: column; }
+        .shell { display: flex; flex-direction: column; height: 100%; max-width: 720px; margin: 0 auto; width: 100%; }
+
+        /* ── ABAS ── */
+        .tabs { display: flex; gap: 4px; padding: 12px 16px 0; border-bottom: 1px solid #222; background: #111; }
+        .tab { padding: 8px 16px; border-radius: 8px 8px 0 0; font-size: 13px; cursor: pointer; color: #888; background: transparent; border: none; border-bottom: 2px solid transparent; transition: all .15s; }
+        .tab.active { color: #fff; border-bottom: 2px solid #7c6ef7; background: #1a1a1a; }
+        .tab:hover:not(.active) { color: #ccc; }
+
+        /* ── VIEWS ── */
+        .view { display: none; flex: 1; overflow-y: auto; padding: 16px; }
+        .view.active { display: block; }
+
+        /* ── LISTA ── */
+        .task-list { display: flex; flex-direction: column; gap: 8px; }
+        .task-card { display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; border-radius: 10px; border: 1px solid #222; background: #1a1a1a; }
+        .task-card .dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; background: #888; }
+        .task-body { flex: 1; min-width: 0; }
+        .task-title { font-size: 14px; font-weight: 500; color: #eee; margin-bottom: 4px; }
+        .task-desc { font-size: 12px; color: #888; margin-bottom: 6px; }
+        .task-meta { display: flex; flex-wrap: wrap; gap: 6px; }
+        .badge { font-size: 11px; padding: 2px 8px; border-radius: 20px; background: #222; color: #999; }
+        .badge.alta  { background: #3d1f1f; color: #f09595; }
+        .badge.media { background: #3d2d0f; color: #fac775; }
+        .badge.baixa { background: #0f2e20; color: #5dcaa5; }
+        .dot.alta  { background: #e24b4a; }
+        .dot.media { background: #ef9f27; }
+        .dot.baixa { background: #1d9e75; }
+        .dot.overdue { background: #e24b4a; box-shadow: 0 0 0 3px #3d1f1f; }
+        .dot.soon    { background: #ef9f27; box-shadow: 0 0 0 3px #3d2d0f; }
+        .del-btn { background: transparent; border: none; color: #444; font-size: 14px; cursor: pointer; padding: 4px; border-radius: 4px; transition: color .15s; flex-shrink: 0; }
+        .del-btn:hover { color: #e24b4a; }
+        .empty { text-align: center; color: #444; font-size: 13px; padding: 40px 0; }
+        .loading-row { color: #555; font-size: 13px; text-align: center; padding: 20px 0; }
+        .section-label { font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 10px; }
+
+        /* ── CALENDÁRIO ── */
+        .cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+        .cal-nav button { background: #1a1a1a; border: 1px solid #333; color: #aaa; border-radius: 6px; padding: 4px 12px; cursor: pointer; font-size: 13px; }
+        .cal-nav button:hover { color: #fff; border-color: #555; }
+        .cal-nav span { font-size: 14px; color: #ccc; font-weight: 500; }
+        .cal-header { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; margin-bottom: 4px; }
+        .cal-day-label { text-align: center; font-size: 11px; color: #555; padding: 4px 0; }
+        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+        .cal-cell { min-height: 64px; border-radius: 6px; background: #1a1a1a; border: 1px solid #222; padding: 4px; font-size: 11px; }
+        .cal-cell .day-num { color: #555; font-size: 10px; margin-bottom: 2px; }
+        .cal-cell.today { border-color: #7c6ef7; }
+        .cal-cell.today .day-num { color: #7c6ef7; font-weight: 500; }
+        .cal-task { border-radius: 4px; padding: 2px 4px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 10px; cursor: default; }
+        .cal-task.alta  { background: #3d1f1f; color: #f09595; }
+        .cal-task.media { background: #3d2d0f; color: #fac775; }
+        .cal-task.baixa { background: #0f2e20; color: #5dcaa5; }
+
+        /* ── CHAT BAR ── */
+        .chat-bar { display: flex; flex-direction: column; gap: 8px; padding: 12px 16px; border-top: 1px solid #1e1e1e; background: #111; }
+        .chat-input-row { display: flex; gap: 8px; align-items: flex-end; }
+        .chat-input-row textarea { flex: 1; background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px; color: #e0e0e0; font-size: 13px; padding: 10px 14px; resize: none; height: 44px; max-height: 120px; font-family: sans-serif; line-height: 1.4; outline: none; transition: border .15s; }
+        .chat-input-row textarea:focus { border-color: #7c6ef7; }
+        .chat-input-row textarea::placeholder { color: #444; }
+        .send-btn { background: #7c6ef7; border: none; border-radius: 10px; color: #fff; width: 40px; height: 40px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background .15s; }
+        .send-btn:hover { background: #6a5ce0; }
+        .send-btn svg { width: 18px; height: 18px; fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .chatgpt-link { text-align: center; }
+        .chatgpt-link a { font-size: 11px; color: #444; text-decoration: none; transition: color .15s; }
+        .chatgpt-link a:hover { color: #888; }
+    </style>
 </head>
 <body>
-    <a href="https://chatgpt.com/c/69e21a90-9214-832a-a2ba-6bd4086f370c" target="_blank">
-        Abrir ChatGPT
-    </a>
 
-    <form onsubmit="salvarTarefa(event)">
-        <textarea id="command" placeholder="Título; Descrição" required></textarea>
-        <button type="submit">Salvar</button>
-    </form>
+<div class="shell">
 
-    <div class="view" id="view-list">
-        <div class="list-view" id="task-list">
-            <div class="list-empty">carregando tarefas...</div>
+    <!-- ABAS -->
+    <div class="tabs">
+        <button class="tab active" onclick="switchTab('list')">Lista</button>
+        <button class="tab" onclick="switchTab('cal')">Calendário</button>
+    </div>
+
+    <!-- VIEW: LISTA -->
+    <div class="view active" id="view-list">
+        <div id="task-list" class="task-list">
+            <div class="loading-row">carregando tarefas...</div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="scripts/supabase_connection.js"></script>
-    <script>
+    <!-- VIEW: CALENDÁRIO -->
+    <div class="view" id="view-cal">
+        <div class="cal-nav">
+            <button onclick="calPrev()">&#8249;</button>
+            <span id="cal-month-label"></span>
+            <button onclick="calNext()">&#8250;</button>
+        </div>
+        <div class="cal-header">
+            <div class="cal-day-label">Dom</div>
+            <div class="cal-day-label">Seg</div>
+            <div class="cal-day-label">Ter</div>
+            <div class="cal-day-label">Qua</div>
+            <div class="cal-day-label">Qui</div>
+            <div class="cal-day-label">Sex</div>
+            <div class="cal-day-label">Sáb</div>
+        </div>
+        <div class="cal-grid" id="cal-grid"></div>
+    </div>
 
-        // ── SUPABASE: CRUD ───────────────────────────────────────────────
+    <!-- CHAT BAR -->
+    <div class="chat-bar">
+        <div class="chat-input-row">
+            <textarea id="command"
+                placeholder="Título; Descrição; Prioridade; Prazo (DD/MM/AAAA)"
+                onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();salvarTarefa(event)}"
+                oninput="autoResize(this)"></textarea>
+            <button class="send-btn" onclick="salvarTarefa(event)" title="Enviar">
+                <svg viewBox="0 0 24 24">
+                    <line x1="22" y1="2" x2="11" y2="13"/>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                </svg>
+            </button>
+        </div>
+        <div class="chatgpt-link">
+            <a href="https://chatgpt.com/c/69e21a90-9214-832a-a2ba-6bd4086f370c" target="_blank">abrir chatgpt ↗</a>
+        </div>
+    </div>
 
-        async function fetchTarefas() {
-            return await supabaseClient
-                .from('tarefas')
-                .select('*')
-                .order('created_at', { ascending: false });
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="scripts/supabase_connection.js"></script>
+<script>
+
+    var allTasks = [];
+    var calYear, calMonth;
+    (function() {
+        var d = new Date();
+        calYear  = d.getFullYear();
+        calMonth = d.getMonth();
+    }());
+
+    // ── UTILITÁRIOS ──────────────────────────────────────────────────
+
+    function autoResize(el) {
+        el.style.height = '44px';
+        el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+    }
+
+    function switchTab(t) {
+        document.querySelectorAll('.tab').forEach((b, i) => {
+            b.classList.toggle('active', ['list', 'cal'][i] === t);
+        });
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        document.getElementById('view-' + t).classList.add('active');
+        if (t === 'cal') renderCalendar();
+    }
+
+    // ── SUPABASE: CRUD ───────────────────────────────────────────────
+
+    async function fetchTarefas() {
+        return await supabaseClient
+            .from('tarefas')
+            .select('*')
+            .order('created_at', { ascending: false });
+    }
+
+    async function deleteTarefa(id) {
+        return await supabaseClient
+            .from('tarefas')
+            .delete()
+            .eq('id', id);
+    }
+
+    // ── ALGORITMO DE IMPORTÂNCIA ─────────────────────────────────────
+    //
+    // score = prioridade + urgencia + tempo_parado
+    //
+    // prioridade:   alta=3  media=2  baixa=1
+    // urgencia:     1-2 dias=+3  3-5 dias=+2  mais=+1  sem prazo=0
+    // tempo_parado: +1 a cada 3 dias sem atualizar
+    //
+    // resultado:
+    //   score >= 6 → ALTA
+    //   score >= 4 → MÉDIA
+    //   senão      → BAIXA
+
+    function calcularScore(tarefa) {
+        const now = new Date();
+
+        // prioridade
+        const mapPrioridade = { alta: 3, media: 2, baixa: 1 };
+        const scorePrioridade = mapPrioridade[tarefa.prioridade] || 1;
+
+        // urgencia (prazo)
+        let scoreUrgencia = 0;
+        if (tarefa.prazo) {
+            const diffDias = (new Date(tarefa.prazo) - now) / 86400000;
+            if (diffDias <= 2)      scoreUrgencia = 3;
+            else if (diffDias <= 5) scoreUrgencia = 2;
+            else                    scoreUrgencia = 1;
         }
 
-        async function deleteTarefa(id) {
-            return await supabaseClient
-                .from('tarefas')
-                .delete()
-                .eq('id', id);
+        // tempo parado (usa updated_at ou created_at)
+        const ultimaAtualizacao = new Date(tarefa.updated_at || tarefa.created_at);
+        const diasParado = (now - ultimaAtualizacao) / 86400000;
+        const scoreTempoParado = Math.floor(diasParado / 3);
+
+        return scorePrioridade + scoreUrgencia + scoreTempoParado;
+    }
+
+    function scoreParaLabel(score) {
+        if (score >= 6) return 'alta';
+        if (score >= 4) return 'media';
+        return 'baixa';
+    }
+
+    // ── SALVAR TAREFA ────────────────────────────────────────────────
+
+    async function salvarTarefa(event) {
+        event.preventDefault();
+
+        const command = document.getElementById('command').value;
+        const parts = command.split(';').map(s => s.trim());
+
+        const titulo     = parts[0] || '';
+        const descricao  = parts[1] || '';
+        const prioridade = (parts[2] || 'media').toLowerCase();
+
+        // converte prazo DD/MM/AAAA → formato ISO para o banco
+        let prazo = null;
+        if (parts[3]) {
+            const [dia, mes, ano] = parts[3].split('/');
+            prazo = `${ano}-${mes}-${dia}`;
         }
 
-        // ── SALVAR TAREFA ────────────────────────────────────────────────
+        const { data } = await supabaseClient.auth.getUser();
+        const user = data.user;
 
-        async function salvarTarefa(event) {
-            event.preventDefault();
+        if (!user) {
+            alert('Você precisa estar logado!');
+            return;
+        }
 
-            const command = document.getElementById("command").value;
-            const parts = command.split(";").map(s => s.trim());
-            const titulo = parts[0] || "";
-            const descricao = parts[1] || "";
+        const { error } = await supabaseClient
+            .from('tarefas')
+            .insert([{
+                titulo,
+                descricao,
+                prioridade,
+                prazo,
+                status: 'pendente',
+                user_id: user.id
+            }]);
 
-            const { data } = await supabaseClient.auth.getUser();
-            const user = data.user;
+        if (error) {
+            alert('Erro: ' + error.message);
+        } else {
+            const cmd = document.getElementById('command');
+            cmd.value = '';
+            cmd.style.height = '44px';
+            loadList();
+        }
+    }
 
-            if (!user) {
-                alert("Você precisa estar logado!");
-                return;
+    // ── UTILITÁRIOS ──────────────────────────────────────────────────
+
+    function formatDate(date) {
+        if (!date) return '';
+        return new Date(date).toLocaleDateString('pt-BR');
+    }
+
+    // ── RENDERIZAÇÃO DA LISTA ────────────────────────────────────────
+
+    async function loadList() {
+        const container = document.getElementById('task-list');
+        container.innerHTML = '<div class="loading-row">carregando...</div>';
+
+        const { data, error } = await fetchTarefas();
+
+        if (error) {
+            container.innerHTML = `<div class="empty">Erro: ${error.message}</div>`;
+            return;
+        }
+
+        allTasks = data || [];
+        renderList(allTasks);
+        renderCalendar();
+    }
+
+    function renderList(tasks) {
+        const container = document.getElementById('task-list');
+
+        if (!tasks.length) {
+            container.innerHTML = '<div class="empty">nenhuma tarefa ainda.</div>';
+            return;
+        }
+
+        // ordena pelo score (maior primeiro)
+        tasks.sort((a, b) => calcularScore(b) - calcularScore(a));
+
+        const now = new Date();
+        let html = '<div class="section-label">por importância</div>';
+
+        tasks.forEach(t => {
+            const score = calcularScore(t);
+            const imp   = scoreParaLabel(score);
+
+            let dotClass = imp;
+            if (t.prazo) {
+                const diff = new Date(t.prazo) - now;
+                if (diff < 0)             dotClass = 'overdue';
+                else if (diff < 86400000) dotClass = 'soon';
             }
 
-            const { error } = await supabaseClient
-                .from('tarefas')
-                .insert([{ titulo, descricao, user_id: user.id }]);
-
-            if (error) {
-                alert("Erro: " + error.message);
-            } else {
-                document.getElementById("command").value = "";
-                loadList();
-            }
-        }
-
-        // ── UTILITÁRIOS ──────────────────────────────────────────────────
-
-        function formatDate(date) {
-            if (!date) return '';
-            return new Date(date).toLocaleString();
-        }
-
-        // ── RENDERIZAÇÃO DA LISTA ────────────────────────────────────────
-
-        async function loadList() {
-            const container = document.getElementById('task-list');
-            container.innerHTML = '<div class="loading-row">carregando...</div>';
-
-            const { data, error } = await fetchTarefas();
-
-            if (error) {
-                container.innerHTML = `<div class="list-empty">Erro: ${error.message}</div>`;
-                return;
-            }
-
-            renderList(data || []);
-        }
-
-        function renderList(tasks) {
-            const container = document.getElementById('task-list');
-
-            if (!tasks.length) {
-                container.innerHTML = '<div class="list-empty">nenhuma tarefa ainda.</div>';
-                return;
-            }
-
-            const now = new Date();
-            let html = '<div class="section-label">por prazo</div>';
-
-            tasks.forEach(t => {
-                let dotClass = '';
-                if (t.prazo) {
-                    const diff = new Date(t.prazo) - now;
-                    if (diff < 0) dotClass = 'overdue';
-                    else if (diff < 86400000) dotClass = 'soon';
-                }
-
-                html += `
-                    <div class="list-item" id="item-${t.id}">
-                        <div class="li-dot ${dotClass}"></div>
-                        <div class="li-body">
-                            <div class="li-title">${t.titulo}</div>
-                            ${t.descricao ? `<div class="li-desc">${t.descricao}</div>` : ''}
-                            <div class="li-date">${formatDate(t.prazo || t.created_at)}</div>
+            html += `
+                <div class="task-card" id="item-${t.id}">
+                    <div class="dot ${dotClass}"></div>
+                    <div class="task-body">
+                        <div class="task-title">${t.titulo}</div>
+                        ${t.descricao ? `<div class="task-desc">${t.descricao}</div>` : ''}
+                        <div class="task-meta">
+                            <span class="badge">${t.status || '-'}</span>
+                            <span class="badge ${t.prioridade}">${t.prioridade || '-'}</span>
+                            <span class="badge ${imp}">importância: ${imp} (${score}pts)</span>
+                            ${t.prazo ? `<span class="badge">prazo: ${formatDate(t.prazo)}</span>` : ''}
                         </div>
-                        <button class="li-del" onclick="removeTask('${t.id}')" title="remover">✕</button>
-                    </div>`;
-            });
+                    </div>
+                    <button class="del-btn" onclick="removeTask('${t.id}')" title="remover">✕</button>
+                </div>`;
+        });
 
-            container.innerHTML = html;
+        container.innerHTML = html;
+    }
+
+    // ── REMOVER TAREFA ───────────────────────────────────────────────
+
+    async function removeTask(id) {
+        const el = document.getElementById('item-' + id);
+        if (el) el.style.opacity = '0.4';
+
+        const { error } = await deleteTarefa(id);
+
+        if (error) {
+            if (el) el.style.opacity = '1';
+            alert('Erro ao remover: ' + error.message);
+        } else {
+            if (el) el.remove();
+            allTasks = allTasks.filter(t => t.id != id);
+            renderCalendar();
+        }
+    }
+
+    // ── CALENDÁRIO ───────────────────────────────────────────────────
+
+    function calPrev() { calMonth--; if (calMonth < 0) { calMonth = 11; calYear--; } renderCalendar(); }
+    function calNext() { calMonth++; if (calMonth > 11) { calMonth = 0; calYear++; } renderCalendar(); }
+
+    function renderCalendar() {
+        const months = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+        const label = document.getElementById('cal-month-label');
+        const grid  = document.getElementById('cal-grid');
+        if (!label || !grid) return;
+
+        label.textContent = months[calMonth] + ' ' + calYear;
+
+        const firstDay    = new Date(calYear, calMonth, 1).getDay();
+        const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+        const now         = new Date();
+
+        let cells = '';
+
+        // células vazias antes do dia 1
+        for (let i = 0; i < firstDay; i++) {
+            cells += '<div class="cal-cell" style="background:transparent;border-color:transparent"></div>';
         }
 
-        // ── REMOVER TAREFA ───────────────────────────────────────────────
+        for (let d = 1; d <= daysInMonth; d++) {
+            const dateStr  = calYear + '-' + String(calMonth + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+            const isToday  = (calYear === now.getFullYear() && calMonth === now.getMonth() && d === now.getDate());
+            const dayTasks = allTasks.filter(t => t.prazo && t.prazo.startsWith(dateStr));
 
-        async function removeTask(id) {
-            const el = document.getElementById('item-' + id);
-            if (el) el.style.opacity = '0.4';
+            let taskHtml = dayTasks.slice(0, 3).map(t => {
+                const imp = scoreParaLabel(calcularScore(t));
+                return `<div class="cal-task ${imp}" title="${t.titulo}">${t.titulo}</div>`;
+            }).join('');
 
-            const { error } = await deleteTarefa(id);
-
-            if (error) {
-                if (el) el.style.opacity = '1';
-                alert('Erro ao remover: ' + error.message);
-            } else {
-                if (el) el.remove();
+            if (dayTasks.length > 3) {
+                taskHtml += `<div style="font-size:10px;color:#555">+${dayTasks.length - 3}</div>`;
             }
+
+            cells += `<div class="cal-cell${isToday ? ' today' : ''}">
+                <div class="day-num">${d}</div>
+                ${taskHtml}
+            </div>`;
         }
 
-        // ── INICIALIZAÇÃO ────────────────────────────────────────────────
+        grid.innerHTML = cells;
+    }
 
-        loadList();
+    // ── INICIALIZAÇÃO ────────────────────────────────────────────────
 
-    </script>
+    loadList();
+
+</script>
 </body>
 </html>
