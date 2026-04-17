@@ -6,12 +6,21 @@
     <title>Tarefas</title>
 </head>
 <body>
+    <a href="https://chatgpt.com/c/69e21a90-9214-832a-a2ba-6bd4086f370c" target="_blank">
+        Abrir ChatGPT
+    </a>
+    
     <form onsubmit="salvarTarefa(event)">
-        <input type="text" id="titulo" placeholder="Título" required>
-        <input type="text" id="descricao" placeholder="Descrição">
+        <textarea id="command" placeholder="Descrição" required></textarea>
         <button type="submit">Salvar</button>
     </form>
 
+     <div class="view" id="view-list">
+        <div class="list-view" id="task-list">
+            <div class="list-empty">carregando tarefas...</div>
+        </div>
+    </div>
+    </div>
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="scripts/supabase_connection.js"></script>
@@ -19,11 +28,14 @@
         async function salvarTarefa(event) {
                 event.preventDefault();
 
-                const titulo = document.getElementById("titulo").value;
-                const descricao = document.getElementById("descricao").value;
+                const command = document.getElementById("command").value;
+                const [titulo, descricao] = command.split(";").map(s => s.trim());
+
+                alert(`Título: ${titulo}\nDescrição: ${descricao}`);
 
                 // 🔑 pega o usuário logado
                 const { data } = await supabaseClient.auth.getUser();
+                
                 const user = data.user;
                 console.log(user);
 
@@ -48,6 +60,96 @@
                     alert("Salvo com sucesso!");
                 }
             }
+
+            // ── LIST UI ──────────────────────────────────────────────────
+
+            async function fetchTarefas() {
+                return await supabaseClient
+                    .from('tarefas')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                }
+
+            async function deleteTarefa(id) {
+                return await supabaseClient
+                    .from('tarefas')
+                    .delete()
+                    .eq('id', id);
+                }
+
+            function formatDate(date) {
+                if (!date) return '';
+                return new Date(date).toLocaleString();
+                }
+                
+        function switchTab(tab, el) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            el.classList.add('active');
+            document.getElementById('view-' + tab).classList.add('active');
+            if (tab === 'list') loadList();
+        }
+
+        async function loadList() {
+            const container = document.getElementById('task-list');
+            container.innerHTML = '<div class="loading-row"><div class="spinner"></div> carregando...</div>';
+
+            const { data, error } = await fetchTarefas();
+
+            if (error) {
+            container.innerHTML = `<div class="list-empty">Erro: ${error.message}</div>`;
+            return;
+            }
+
+            renderList(data || []);
+        }
+
+        function renderList(tasks) {
+            const container = document.getElementById('task-list');
+
+            if (!tasks.length) {
+            container.innerHTML = '<div class="list-empty">nenhuma tarefa ainda.<br>use o chat para adicionar.</div>';
+            return;
+            }
+
+            const now = new Date();
+            let html = '<div class="section-label">por prazo</div>';
+
+            tasks.forEach(t => {
+            let dotClass = '';
+            if (t.prazo) {
+                const diff = new Date(t.prazo) - now;
+                if (diff < 0) dotClass = 'overdue';
+                else if (diff < 86400000) dotClass = 'soon';
+            }
+            html += `
+                <div class="list-item" id="item-${t.id}">
+                <div class="li-dot ${dotClass}"></div>
+                <div class="li-body">
+                    <div class="li-title">${t.titulo}</div>
+                    ${t.descricao ? `<div class="li-desc">${t.descricao}</div>` : ''}
+                    <div class="li-date">${formatDate(t.prazo)}</div>
+                </div>
+                <button class="li-del" onclick="removeTask('${t.id}')" title="remover">✕</button>
+                </div>`;
+            });
+
+            container.innerHTML = html;
+        }
+
+        async function removeTask(id) {
+            const el = document.getElementById('item-' + id);
+            if (el) el.style.opacity = '0.4';
+
+            const { error } = await deleteTarefa(id);
+
+            if (error) {
+            if (el) el.style.opacity = '1';
+            alert('Erro ao remover: ' + error.message);
+            } else {
+            if (el) el.remove();
+            }
+        }
     </script>
 </body>
 </html>

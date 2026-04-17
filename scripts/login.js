@@ -17,6 +17,6 @@ async function login(email, senha) {
   if (error) {
     alert("Erro: " + error.message);
   } else {
-    window.location.href = "dashboard.html";
+    window.location.href = "tarefas.html";
   }
 }
