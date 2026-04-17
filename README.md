@@ -1,0 +1,2 @@
+# synex-task-manager
+

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tarefas</title>
+</head>
+<body>
+    <form onsubmit="salvarTarefa(event)">
+        <input type="text" id="titulo" placeholder="Título" required>
+        <input type="text" id="descricao" placeholder="Descrição">
+        <button type="submit">Salvar</button>
+    </form>
+
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="scripts/supabase_connection.js"></script>
+    <script>
+        async function salvarTarefa(event) {
+                event.preventDefault();
+
+                const titulo = document.getElementById("titulo").value;
+                const descricao = document.getElementById("descricao").value;
+
+                // 🔑 pega o usuário logado
+                const { data } = await supabaseClient.auth.getUser();
+                const user = data.user;
+                console.log(user);
+
+                if (!user) {
+                    alert("Você precisa estar logado!");
+                    return;
+                }
+
+                const { error } = await supabaseClient
+                    .from('tarefas')
+                    .insert([
+                    {
+                        titulo,
+                        descricao,
+                        user_id: user.id
+                    }
+                    ]);
+
+                if (error) {
+                    alert("Erro: " + error.message);
+                } else {
+                    alert("Salvo com sucesso!");
+                }
+            }
+    </script>
+</body>
+</html>
