@@ -615,76 +615,51 @@ async function removeTask(id) {
    ══════════════════════════════════════════════════════════════════ */
 
 async function salvarTarefa(event) {
-    /* Chamada pelo botão de envio ou pressionamento de Enter no textarea.
-       Parâmetro: event = o evento de clique ou teclado */
-
     event.preventDefault();
-    /* Cancela o comportamento padrão do evento (ex: recarregar a página em formulários) */
 
-    const command = document.getElementById('command').value;
-    /* Lê o texto completo digitado no campo */
-
-    const parts = command.split(';').map(s => s.trim());
-    /* split(';') divide pelo separador ponto-e-vírgula.
-       Ex: "Reunião; Preparar slides; alta; 20/04/2025"
-       → ["Reunião", " Preparar slides", " alta", " 20/04/2025"]
-       .map(s => s.trim()) remove espaços extras de cada parte.
-       → ["Reunião", "Preparar slides", "alta", "20/04/2025"] */
-
-    const titulo     = parts[0] || '';
-    /* Primeira parte = título. || '' garante string vazia se partes não existir. */
-
-    const descricao  = parts[1] || '';
-    /* Segunda parte = descrição (opcional) */
-
-    const prioridade = (parts[2] || 'media').toLowerCase();
-    /* Terceira parte = prioridade. Padrão: 'media'. lowercase evita erros de digitação. */
-
-    let prazo = null;
-    /* Começa nulo — se o usuário não informar prazo, fica null no banco */
-
-    if (parts[3]) {
-        /* Se existe a quarta parte (o prazo) */
-        const [dia, mes, ano] = parts[3].split('/');
-        /* Divide "20/04/2025" em três variáveis via desestruturação */
-
-        prazo = `${ano}-${mes}-${dia}`;
-        /* Remonta no formato ISO (AAAA-MM-DD) que o banco de dados aceita.
-           Ex: "20/04/2025" → "2025-04-20" */
-    }
+    const command = document.getElementById('command').value.trim();
+    if (!command) return;
 
     const { data } = await supabaseClient.auth.getUser();
-    /* Busca o usuário atualmente autenticado no Supabase Auth.
-       Necessário para associar a tarefa ao user_id correto. */
-
     const user = data.user;
     if (!user) { alert('Você precisa estar logado!'); return; }
-    /* Se não há usuário logado, exibe alerta e para a execução */
 
-    const { error } = await supabaseClient
-        .from('tarefas')
-        .insert([{
-            titulo,
-            descricao,
-            prioridade,
-            prazo,
-            status:  'pendente',  /* toda nova tarefa começa com status "pendente" */
-            user_id: user.id      /* associa ao usuário logado para controle de acesso */
-        }]);
-    /* .insert() cria um novo registro. Recebe array de objetos (permite inserção múltipla). */
+    // Divide pelo separador de tarefas: vírgula
+    // trim() em cada parte remove espaços sobrando nas pontas
+    const blocos = command.split('|').map(b => b.trim()).filter(b => b.length > 0);
+
+    // Transforma cada bloco "Título; desc; prioridade; prazo" num objeto
+    const registros = blocos.map(bloco => {
+        const parts = bloco.split(';').map(s => s.trim());
+
+        const titulo     = parts[0] || '';
+        const descricao  = parts[1] || '';
+        const prioridade = (parts[2] || 'media').toLowerCase();
+
+        let prazo = null;
+        if (parts[3]) {
+            const [dia, mes, ano] = parts[3].split('/');
+            prazo = `${ano}-${mes}-${dia}`;
+        }
+
+        return { titulo, descricao, prioridade, prazo, status: 'pendente', user_id: user.id };
+    });
+
+    // Remove entradas sem título (evita salvar linhas vazias por engano)
+    const validos = registros.filter(r => r.titulo.length > 0);
+
+    if (!validos.length) return;
+
+    // Envia todos de uma vez para o banco (insert aceita array)
+    const { error } = await supabaseClient.from('tarefas').insert(validos);
 
     if (error) {
         alert('Erro: ' + error.message);
     } else {
         const cmd = document.getElementById('command');
         cmd.value = '';
-        /* Limpa o campo de texto após salvar com sucesso */
-
         cmd.style.height = '44px';
-        /* Reseta a altura para o tamanho mínimo (desfaz o autoResize) */
-
         await loadList();
-        /* Recarrega a lista para exibir a nova tarefa */
     }
 }
 
