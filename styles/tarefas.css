@@ -1,0 +1,1029 @@
+ /* ══════════════════════════════════════════════════════════════
+       TUDO dentro de <style> é CSS — a linguagem que controla a
+       aparência visual: cores, tamanhos, espaçamentos, animações, etc.
+       ══════════════════════════════════════════════════════════════ */
+
+
+        /* ── RESET GLOBAL ──────────────────────────────────────────── */
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        /*
+          O asterisco (*) seleciona TODOS os elementos da página de uma vez.
+
+          box-sizing: border-box
+            → Por padrão, quando você define width:200px em um elemento,
+              a borda e o padding SÃO ADICIONADOS por cima (fica 200 + borda + padding).
+              Com border-box, o tamanho INCLUI borda e padding — muito mais intuitivo.
+
+          margin: 0
+            → Remove o espaço EXTERNO (fora do elemento) padrão.
+              Navegadores adicionam margens padrão em elementos como <p>, <h1>, <body>.
+              Zeramos para ter controle total.
+
+          padding: 0
+            → Remove o espaço INTERNO (dentro do elemento) padrão.
+
+          Essa técnica se chama "CSS Reset" e é prática padrão no desenvolvimento web.
+        */
+
+
+        /* ── CORPO DA PÁGINA ──────────────────────────────────────── */
+
+        body {
+            font-family: sans-serif;
+            /* Usa uma fonte genérica "sem serifa" (sem os pezinhos nas letras).
+               O navegador escolhe a melhor disponível no sistema: Arial, Helvetica, etc. */
+
+            background: #111;
+            /* Cor de fundo quase-preta (hexadecimal: #111 = cinza muito escuro próximo do preto).
+               Padrão do tema "dark mode" desta interface. */
+
+            color: #e0e0e0;
+            /* Cor do texto padrão de TODA a página: cinza claro.
+               Qualquer texto sem cor definida herda esta. */
+
+            height: 100vh;
+            /* vh = "viewport height" (altura da janela do navegador).
+               100vh = ocupa 100% da altura visível da tela.
+               Garante que a página preencha a janela inteira sem precisar rolar o body. */
+
+            display: flex;
+            flex-direction: column;
+            /* Ativa o layout Flexbox no body.
+               flex-direction: column → os filhos diretos (neste caso, apenas .shell)
+               são empilhados verticalmente, um abaixo do outro. */
+        }
+
+
+        /* ── CONTAINER PRINCIPAL ──────────────────────────────────── */
+
+        .shell {
+            display: flex;
+            flex-direction: column;
+            /* Mesmo sistema do body: organiza filhos em coluna.
+               Os filhos são: .tabs (abas), as .views (painéis de conteúdo) e .chat-bar (rodapé). */
+
+            height: 100%;
+            /* Ocupa 100% da altura do body (que já é 100vh).
+               Isso faz o .shell preencher toda a tela verticalmente. */
+
+            max-width: 720px;
+            /* Define uma largura máxima de 720 pixels.
+               Em telas grandes, o conteúdo não vai ultrapassar essa largura,
+               mantendo uma largura confortável de leitura. */
+
+            margin: 0 auto;
+            /* margin: 0 em cima/baixo, auto nos lados.
+               "auto" nos lados horizontais centraliza o elemento na tela
+               quando ele é mais estreito que o container pai. */
+
+            width: 100%;
+            /* Ocupa toda a largura disponível até o limite de max-width: 720px.
+               Necessário para que margin: 0 auto funcione corretamente. */
+        }
+
+
+        /* ══════════════════════════════════════════════════════════════
+           SEÇÃO: ABAS DE NAVEGAÇÃO (Lista / Calendário / Arquivadas)
+           ══════════════════════════════════════════════════════════════ */
+
+        .tabs {
+            display: flex;
+            /* Coloca os botões de aba lado a lado (em linha horizontal) */
+
+            gap: 4px;
+            /* Espaço de 4px entre cada botão de aba */
+
+            padding: 12px 16px 0;
+            /* Espaço interno: 12px em cima, 16px nos lados esquerdo e direito, 0 embaixo.
+               O 0 embaixo faz as abas encostarem na linha divisória (border-bottom abaixo). */
+
+            border-bottom: 1px solid #222;
+            /* Linha fina (1px) cinza-escura (#222) embaixo da barra de abas.
+               Separa visualmente as abas do conteúdo abaixo. */
+
+            background: #111;
+            /* Fundo idêntico ao da página para as abas "se fundirem" com o fundo. */
+
+            flex-shrink: 0;
+            /* Impede que a barra de abas encolha quando o espaço é limitado.
+               Sem isso, com pouco espaço vertical, as abas poderiam ficar espremidas. */
+        }
+
+        .tab {
+            padding: 8px 16px;
+            /* Espaço interno de 8px vertical e 16px horizontal dentro de cada botão */
+
+            border-radius: 8px 8px 0 0;
+            /* Arredonda apenas os cantos superiores (esquerdo-cima e direito-cima = 8px,
+               esquerdo-baixo e direito-baixo = 0).
+               Cria o formato clássico de "aba de pasta". */
+
+            font-size: 13px;
+            /* Tamanho do texto do botão em pixels */
+
+            cursor: pointer;
+            /* Muda o cursor do mouse para "mãozinha" ao passar sobre o botão,
+               sinalizando ao usuário que é clicável */
+
+            color: #888;
+            /* Cor do texto da aba INATIVA: cinza médio (discreta) */
+
+            background: transparent;
+            /* Fundo transparente (aba inativa não tem fundo próprio) */
+
+            border: none;
+            /* Remove a borda padrão dos botões HTML */
+
+            border-bottom: 2px solid transparent;
+            /* Borda inferior de 2px que começa invisível (transparent).
+               Reserva o espaço visual para quando a aba for ativada (linha colorida aparece). */
+
+            transition: all .15s;
+            /* Qualquer mudança de propriedade CSS acontece suavemente em 0.15 segundos.
+               "all" = todas as propriedades (cor, fundo, borda...) animam juntas. */
+        }
+
+        .tab.active {
+            color: #fff;
+            /* Texto branco na aba ativa (destaca em relação às inativas em #888) */
+
+            border-bottom: 2px solid #7c6ef7;
+            /* Linha roxa-azulada embaixo → indicador visual de qual aba está selecionada */
+
+            background: #1a1a1a;
+            /* Fundo levemente mais claro que o preto da barra,
+               criando uma elevação visual sutil para a aba ativa */
+        }
+
+        .tab:hover:not(.active) {
+            color: #ccc;
+            /* Quando o mouse passa sobre uma aba que NÃO está ativa:
+               o texto fica cinza-claro (#ccc), dando feedback visual de interatividade.
+               :not(.active) garante que a aba já selecionada não mude de aparência ao hover. */
+        }
+
+
+        /* ══════════════════════════════════════════════════════════════
+           SEÇÃO: VIEWS (painéis de conteúdo de cada aba)
+           ══════════════════════════════════════════════════════════════ */
+
+        .view {
+            display: none;
+            /* Por padrão, todas as views ficam INVISÍVEIS.
+               Apenas a view com classe "active" será exibida (ver abaixo). */
+
+            flex: 1;
+            /* Quando visível, ocupa TODO o espaço vertical disponível entre as abas e o rodapé.
+               flex: 1 é equivalente a flex-grow: 1, flex-shrink: 1, flex-basis: 0. */
+
+            overflow-y: auto;
+            /* Se o conteúdo for mais alto que a tela, aparece barra de rolagem vertical.
+               overflow-x (horizontal) permanece "visible" por padrão. */
+
+            padding: 16px;
+            /* Espaço interno de 16px em todos os lados para o conteúdo não encostar nas bordas */
+        }
+
+        .view.active {
+            display: flex;
+            flex-direction: column;
+            /* A view ativa se torna um container flex em coluna,
+               permitindo que seu conteúdo interno (lista, calendário etc.) use o espaço corretamente.
+               "display: none" → "display: flex" é o que faz a view aparecer/desaparecer. */
+        }
+
+
+        /* ══════════════════════════════════════════════════════════════
+           SEÇÃO: LISTA DE TAREFAS
+           ══════════════════════════════════════════════════════════════ */
+
+        .task-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            /* Container que agrupa todos os cartões de tarefa.
+               Os cartões são empilhados verticalmente (column) com 8px de espaço entre eles. */
+        }
+
+
+        /* ── CARTÃO INDIVIDUAL DE TAREFA ─────────────────────────── */
+
+        .task-card {
+            display: flex;
+            /* Coloca os elementos internos (bolinha + corpo + ações) lado a lado */
+
+            align-items: flex-start;
+            /* Alinha todos os filhos pelo topo (não pelo centro vertical).
+               Quando a tarefa tem muito texto, a bolinha fica no topo, não no meio. */
+
+            gap: 12px;
+            /* 12px de espaço entre a bolinha, o corpo da tarefa e os botões de ação */
+
+            padding: 12px 14px;
+            /* Espaço interno: 12px vertical, 14px horizontal */
+
+            border-radius: 10px;
+            /* Cantos bem arredondados para um visual moderno e suave */
+
+            border: 1px solid #222;
+            /* Borda fina cinza-escura que delimita o cartão */
+
+            background: #1a1a1a;
+            /* Fundo levemente mais claro que o preto da página,
+               criando uma leve separação visual do fundo */
+
+            transition: opacity .2s;
+            /* Quando a opacidade mudar (ex: ao deletar), a transição leva 0.2 segundos.
+               Usado para o efeito de esmaecimento antes de remover o cartão. */
+        }
+
+        .task-card.archived {
+            opacity: 0.5;
+            /* Tarefas arquivadas ficam com 50% de opacidade (semi-transparentes),
+               indicando visualmente que são "concluídas/inativas" */
+        }
+
+        .task-card .dot {
+            width: 10px;
+            height: 10px;
+            /* Bolinha quadrada de 10x10px — o border-radius abaixo a transforma em círculo */
+
+            border-radius: 50%;
+            /* 50% transforma qualquer quadrado em círculo perfeito */
+
+            margin-top: 4px;
+            /* Desce a bolinha 4px para alinhar visualmente com a primeira linha do título */
+
+            flex-shrink: 0;
+            /* Impede que a bolinha encolha mesmo quando o espaço está apertado */
+
+            background: #888;
+            /* Cor padrão cinza — sobrescrita pelas classes .dot.alta, .dot.media, etc. abaixo */
+        }
+
+        .task-body {
+            flex: 1;
+            /* Ocupa todo o espaço disponível entre a bolinha e os botões de ação */
+
+            min-width: 0;
+            /* Truque técnico essencial: sem min-width: 0, elementos flex não deixam
+               textos longos serem cortados com "...".
+               O mínimo padrão é "auto" (o tamanho natural do conteúdo), o que impede o truncamento. */
+        }
+
+        .task-title {
+            font-size: 14px;
+            font-weight: 500;
+            /* Negrito médio (entre normal=400 e bold=700) */
+
+            color: #eee;
+            /* Quase branco — destaca o título como elemento principal do cartão */
+
+            margin-bottom: 4px;
+            /* Espaço abaixo do título antes da descrição */
+        }
+
+        .task-desc {
+            font-size: 12px;
+            /* Menor que o título — hierarquia visual clara */
+
+            color: #888;
+            /* Cinza médio — menos destaque que o título */
+
+            margin-bottom: 6px;
+            /* Espaço abaixo da descrição antes das etiquetas (badges) */
+        }
+
+        .task-meta {
+            display: flex;
+            flex-wrap: wrap;
+            /* Se não couber tudo em uma linha, as etiquetas quebram para a linha seguinte */
+
+            gap: 6px;
+            /* 6px de espaço entre cada etiqueta */
+        }
+
+
+        /* ── BADGES (etiquetas/pílulas de informação) ─────────────── */
+
+        .badge {
+            font-size: 11px;
+            /* Texto bem pequeno — as badges são informações secundárias */
+
+            padding: 2px 8px;
+            /* Pouco espaço vertical (2px) e mais espaço horizontal (8px)
+               cria o formato de "pílula" */
+
+            border-radius: 20px;
+            /* Valor alto = cantos completamente arredondados (formato pílula/pill) */
+
+            background: #222;
+            color: #999;
+            /* Cores padrão neutras — sobrescritas pelas classes específicas abaixo */
+        }
+
+        /* Cores para cada nível de prioridade — usadas em badges E células do calendário */
+
+        .badge.alta   { background: #3d1f1f; color: #f09595; }
+        /* Alta: fundo vermelho-escuro, texto vermelho-claro */
+
+        .badge.media  { background: #3d2d0f; color: #fac775; }
+        /* Média: fundo laranja-escuro, texto laranja-claro */
+
+        .badge.baixa  { background: #0f2e20; color: #5dcaa5; }
+        /* Baixa: fundo verde-escuro, texto verde-claro */
+
+        .badge.concluida { background: #1a2e1a; color: #5dca8a; }
+        /* Concluída: fundo verde mais vivo, texto verde-esmeralda */
+
+
+        /* ── BOLINHAS DE STATUS (dot) por prioridade ──────────────── */
+
+        .dot.alta    { background: #e24b4a; }
+        /* Bolinha vermelha → prioridade alta */
+
+        .dot.media   { background: #ef9f27; }
+        /* Bolinha laranja → prioridade média */
+
+        .dot.baixa   { background: #1d9e75; }
+        /* Bolinha verde → prioridade baixa */
+
+        .dot.overdue {
+            background: #e24b4a;
+            box-shadow: 0 0 0 3px #3d1f1f;
+            /* box-shadow com "0 0 0 Xpx" cria um anel em volta da bolinha.
+               Efeito visual de alerta: "esta tarefa está VENCIDA!"
+               Os valores: deslocamento-x=0, deslocamento-y=0, blur=0, spread=3px, cor=vermelho-escuro */
+        }
+
+        .dot.soon {
+            background: #ef9f27;
+            box-shadow: 0 0 0 3px #3d2d0f;
+            /* Mesmo efeito de anel, mas em laranja → "prazo em menos de 1 dia!" */
+        }
+
+        .dot.concluida { background: #1d9e75; }
+        /* Bolinha verde para tarefas concluídas */
+
+
+        /* ── BOTÕES DE AÇÃO DO CARTÃO (editar / concluir / deletar) ── */
+
+        .task-actions {
+            display: flex;
+            gap: 4px;
+            /* Botões de ação lado a lado com 4px de espaço entre eles */
+
+            flex-shrink: 0;
+            /* Não encolhe — os botões sempre ficam visíveis */
+
+            align-items: flex-start;
+            margin-top: 2px;
+            /* Alinha pelo topo com pequeno ajuste vertical */
+        }
+
+        .act-btn {
+            background: transparent;
+            border: none;
+            /* Botão sem fundo nem borda — parece apenas um ícone flutuando */
+
+            font-size: 13px;
+            cursor: pointer;
+            /* Cursor de mãozinha indica que é clicável */
+
+            padding: 4px 6px;
+            /* Aumenta a área clicável ao redor do ícone (usabilidade) */
+
+            border-radius: 5px;
+            /* Cantos levemente arredondados para o feedback de hover */
+
+            transition: background .15s, color .15s;
+            /* Transição suave de fundo e cor em 0.15s */
+
+            color: #444;
+            /* Cor discreta por padrão — só chama atenção ao hover */
+        }
+
+        .act-btn:hover           { background: #222; }
+        /* Todos os botões de ação ganham fundo cinza-escuro ao hover */
+
+        .act-btn.edit:hover    { color: #7c6ef7; }
+        /* Botão editar fica roxo ao hover */
+
+        .act-btn.done:hover    { color: #1d9e75; }
+        /* Botão concluir fica verde ao hover */
+
+        .act-btn.del:hover     { color: #e24b4a; }
+        /* Botão deletar fica vermelho ao hover */
+
+
+        /* ── FORMULÁRIO DE EDIÇÃO INLINE ──────────────────────────── */
+
+        .edit-form {
+            display: none;
+            /* Fica escondido por padrão — aparece apenas quando .open é adicionado */
+
+            flex-direction: column;
+            gap: 6px;
+            /* Campos empilhados verticalmente com 6px de espaço */
+
+            margin-top: 8px;
+            /* Espaço acima do formulário para separar do conteúdo do cartão */
+        }
+
+        .edit-form.open { display: flex; }
+        /* Adicionar a classe "open" via JavaScript torna o formulário visível */
+
+        .edit-input {
+            background: #111;
+            /* Fundo levemente mais escuro que o cartão para diferenciação visual */
+
+            border: 1px solid #333;
+            border-radius: 7px;
+            color: #e0e0e0;
+            font-size: 13px;
+            padding: 7px 10px;
+            font-family: sans-serif;
+            /* Os inputs herdam a fonte do sistema, não a do CSS — precisamos definir explicitamente */
+
+            outline: none;
+            /* Remove o anel azul padrão de foco do navegador
+               (substituímos por nossa própria borda roxa abaixo) */
+
+            width: 100%;
+            /* Ocupa toda a largura disponível */
+
+            transition: border .15s;
+        }
+
+        .edit-input:focus { border-color: #7c6ef7; }
+        /* Borda roxa quando o input está em foco — feedback visual de "campo ativo" */
+
+        .edit-row {
+            display: flex;
+            gap: 6px;
+            /* Linha com select de prioridade + botões Salvar/Cancelar lado a lado */
+        }
+
+        .edit-select {
+            flex: 1;
+            /* Ocupa todo o espaço disponível, deixando apenas os botões à direita */
+
+            background: #111;
+            border: 1px solid #333;
+            border-radius: 7px;
+            color: #e0e0e0;
+            font-size: 13px;
+            padding: 7px 10px;
+            outline: none;
+        }
+
+        .edit-save {
+            background: #7c6ef7;
+            /* Botão roxo — cor primária da interface */
+
+            border: none;
+            border-radius: 7px;
+            color: #fff;
+            font-size: 12px;
+            padding: 7px 14px;
+            cursor: pointer;
+            font-weight: 500;
+            white-space: nowrap;
+            /* Impede que o texto do botão quebre em múltiplas linhas */
+
+            transition: background .15s;
+        }
+
+        .edit-save:hover { background: #6a5ce0; }
+        /* Roxo mais escuro ao hover para indicar interatividade */
+
+        .edit-cancel {
+            background: #222;
+            border: none;
+            border-radius: 7px;
+            color: #888;
+            font-size: 12px;
+            padding: 7px 14px;
+            cursor: pointer;
+            transition: background .15s;
+        }
+
+        .edit-cancel:hover { background: #2a2a2a; color: #ccc; }
+        /* Fundo levemente mais claro e texto mais visível ao hover */
+
+
+        /* ══════════════════════════════════════════════════════════════
+           SEÇÃO: CALENDÁRIO
+           ══════════════════════════════════════════════════════════════ */
+
+        .cal-nav {
+            display: flex;
+            align-items: center;
+            /* Alinha seta, texto do mês e seta ao centro vertical */
+
+            justify-content: space-between;
+            /* Distribui os 3 elementos: seta-esq à esquerda, mês ao centro, seta-dir à direita */
+
+            margin-bottom: 12px;
+            /* Espaço abaixo da barra de navegação antes do cabeçalho de dias */
+        }
+
+        .cal-nav button {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            color: #aaa;
+            border-radius: 6px;
+            padding: 4px 12px;
+            cursor: pointer;
+            font-size: 13px;
+            /* Botões de seta (‹ e ›) de navegação entre meses */
+        }
+
+        .cal-nav button:hover { color: #fff; border-color: #555; }
+        /* Texto mais branco e borda mais visível ao hover */
+
+        .cal-nav span {
+            font-size: 14px;
+            color: #ccc;
+            font-weight: 500;
+            /* Texto do mês e ano atual — levemente em negrito para destaque */
+        }
+
+        .cal-header {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            /* CSS Grid com 7 colunas de tamanho IGUAL (1fr = 1 fração do espaço disponível).
+               Uma coluna para cada dia da semana (Dom, Seg, ..., Sáb). */
+
+            gap: 2px;
+            /* Espaço mínimo entre as células para não ficarem completamente coladas */
+
+            margin-bottom: 4px;
+            /* Espaço entre o cabeçalho de dias e a grade dos números */
+        }
+
+        .cal-day-label {
+            text-align: center;
+            /* Centraliza o texto "Dom", "Seg", etc. na coluna */
+
+            font-size: 11px;
+            color: #555;
+            /* Cinza médio-escuro — informação de apoio, não destaque */
+
+            padding: 4px 0;
+            /* Pequeno espaço vertical para respiração */
+        }
+
+        .cal-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            /* Mesma estrutura do cabeçalho: 7 colunas iguais.
+               Os dias do mês são encaixados aqui automaticamente pelo CSS Grid. */
+
+            gap: 2px;
+        }
+
+
+        /* ── CÉLULA DO CALENDÁRIO ────────────────────────────────── */
+
+        .cal-cell {
+            min-height: 64px;
+            /* Altura mínima — a célula cresce automaticamente se tiver muitas tarefas */
+
+            border-radius: 6px;
+            background: #1a1a1a;
+            border: 1px solid #222;
+            padding: 4px;
+            font-size: 11px;
+
+            cursor: pointer;
+            /* Cursor de mãozinha — todas as células são clicáveis */
+
+            transition: border-color .15s, background .15s;
+            /* Transição suave das mudanças de cor ao hover e seleção */
+        }
+
+        .cal-cell:hover    { border-color: #7c6ef7; background: #1c1c2a; }
+        /* Hover: borda roxa e fundo levemente roxo-escuro */
+
+        .cal-cell.selected { border-color: #7c6ef7; background: #1f1d30; }
+        /* Dia selecionado: borda roxa + fundo roxo um pouco mais intenso */
+
+        .cal-cell.today    { border-color: #7c6ef7; }
+        /* Dia de HOJE: apenas a borda roxa (sem fundo diferente) */
+
+        .cal-cell.today .day-num  { color: #7c6ef7; font-weight: 600; }
+        /* Número do dia de hoje: roxo e em negrito forte */
+
+        .cal-cell.empty-cell {
+            cursor: default;
+            /* Células vazias antes do dia 1 não são clicáveis — cursor normal */
+
+            background: transparent;
+            border-color: transparent;
+            /* Completamente invisíveis — apenas ocupam espaço no grid para alinhamento */
+        }
+
+        .cal-cell.empty-cell:hover { background: transparent; border-color: transparent; }
+        /* Sobrescreve o :hover padrão das células para as vazias não reagirem ao mouse */
+
+        .cal-cell .day-num {
+            color: #555;
+            font-size: 10px;
+            /* Número do dia pequeno e discreto no canto superior da célula */
+
+            margin-bottom: 2px;
+        }
+
+        .cal-task {
+            border-radius: 4px;
+            padding: 2px 4px;
+            margin-bottom: 2px;
+
+            white-space: nowrap;
+            /* Impede que o título da tarefa quebre em múltiplas linhas */
+
+            overflow: hidden;
+            /* Esconde o texto que ultrapassa a largura da célula */
+
+            text-overflow: ellipsis;
+            /* Adiciona "..." quando o texto é cortado pelo overflow */
+
+            font-size: 10px;
+            /* Texto bem pequeno para caber nas células compactas do calendário */
+        }
+
+        /* Cores das tarefas no calendário (mesmo padrão das badges) */
+        .cal-task.alta     { background: #3d1f1f; color: #f09595; }
+        .cal-task.media    { background: #3d2d0f; color: #fac775; }
+        .cal-task.baixa    { background: #0f2e20; color: #5dcaa5; }
+        .cal-task.concluida { background: #1a2e1a; color: #5dca8a; text-decoration: line-through; opacity: .7; }
+        /* Tarefas concluídas no calendário: texto riscado e semi-transparente */
+
+
+        /* ══════════════════════════════════════════════════════════════
+           SEÇÃO: PAINEL DO DIA (aparece abaixo do calendário ao clicar)
+           ══════════════════════════════════════════════════════════════ */
+
+        .day-panel {
+            margin-top: 12px;
+            border: 1px solid #2a2a2a;
+            border-radius: 12px;
+            background: #161616;
+            overflow: hidden;
+            /* overflow: hidden é necessário para que o border-radius funcione
+               com o conteúdo interno — sem isso, o conteúdo "vaza" pelos cantos */
+
+            /* Animação de abertura/fechamento usando max-height:
+               Não podemos animar height: auto diretamente em CSS.
+               A solução é animar max-height de 0 (fechado) até um valor alto (aberto). */
+
+            max-height: 0;
+            /* Estado FECHADO: altura máxima 0 → conteúdo completamente escondido */
+
+            opacity: 0;
+            /* Começa invisível para o efeito de fade-in */
+
+            transition: max-height .3s ease, opacity .25s ease, margin .25s ease;
+            /* Animação suave de 0.3s para altura, 0.25s para opacidade e margem */
+        }
+
+        .day-panel.open {
+            max-height: 800px;
+            /* Estado ABERTO: limite alto o suficiente para qualquer conteúdo.
+               O painel crescerá até seu tamanho natural (menos que 800px na prática). */
+
+            opacity: 1;
+            /* Totalmente visível */
+        }
+
+
+        /* ── CABEÇALHO DO PAINEL DO DIA ──────────────────────────── */
+
+        .day-panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            /* Data do dia à esquerda, botão "Adicionar" à direita */
+
+            padding: 12px 16px;
+            border-bottom: 1px solid #222;
+            /* Linha divisória entre cabeçalho e lista de tarefas */
+        }
+
+        .day-panel-title {
+            font-size: 13px;
+            font-weight: 600;
+            /* Semi-bold — destaque moderado para o título da data */
+
+            color: #ccc;
+        }
+
+        .add-task-btn {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            /* Ícone "+" e texto "Adicionar tarefa" lado a lado com 5px de espaço */
+
+            background: #7c6ef7;
+            /* Botão roxo — ação primária */
+
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 12px;
+            font-weight: 500;
+            padding: 6px 12px;
+            cursor: pointer;
+            transition: background .15s;
+        }
+
+        .add-task-btn:hover { background: #6a5ce0; }
+
+        .add-task-btn span {
+            font-size: 16px;
+            line-height: 1;
+            margin-bottom: 1px;
+            /* O "+" precisa de pequeno ajuste vertical para alinhar com o texto ao lado */
+        }
+
+
+        /* ── LISTA DE TAREFAS DENTRO DO PAINEL DO DIA ────────────── */
+
+        .day-task-list {
+            padding: 10px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            /* Cartões de tarefa empilhados com 6px de espaço entre eles */
+        }
+
+        .day-empty {
+            font-size: 12px;
+            color: #444;
+            text-align: center;
+            padding: 16px 0;
+            /* Mensagem "Nenhuma tarefa para este dia" — centralizada e discreta */
+        }
+
+
+        /* ══════════════════════════════════════════════════════════════
+           SEÇÃO: FORMULÁRIO DE ADICIONAR TAREFA (no painel do dia)
+           ══════════════════════════════════════════════════════════════ */
+
+        .add-form {
+            display: none;
+            /* Começa oculto — aparece ao clicar em "Adicionar tarefa" */
+
+            flex-direction: column;
+            gap: 8px;
+            padding: 12px 14px;
+            border-top: 1px solid #222;
+            /* Linha divisória separando o formulário da lista de tarefas acima */
+
+            background: #111;
+            /* Fundo levemente diferente do painel para destacar a seção de formulário */
+        }
+
+        .add-form.open { display: flex; }
+        /* Classe adicionada via JS para mostrar o formulário */
+
+        .add-form-title {
+            font-size: 11px;
+            color: #555;
+            text-transform: uppercase;
+            /* Converte para MAIÚSCULAS automaticamente (sem alterar o HTML) */
+
+            letter-spacing: .05em;
+            /* Pequeno espaço extra entre letras — estilo típico de rótulo/label */
+        }
+
+        .add-input {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            color: #e0e0e0;
+            font-size: 13px;
+            padding: 9px 12px;
+            font-family: sans-serif;
+            outline: none;
+            width: 100%;
+            transition: border .15s;
+        }
+
+        .add-input:focus      { border-color: #7c6ef7; }
+        .add-input::placeholder { color: #444; }
+        /* Texto placeholder (#444) mais escuro que o texto digitado (#e0e0e0) */
+
+        .add-form-row {
+            display: flex;
+            gap: 8px;
+            /* Select de prioridade e botão Salvar lado a lado */
+        }
+
+        .add-select {
+            flex: 1;
+            /* Ocupa o espaço restante, deixando apenas o botão à direita */
+
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            color: #e0e0e0;
+            font-size: 13px;
+            padding: 9px 12px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .add-submit {
+            background: #7c6ef7;
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 13px;
+            padding: 9px 20px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background .15s;
+            white-space: nowrap;
+        }
+
+        .add-submit:hover    { background: #6a5ce0; }
+
+        .add-submit:disabled {
+            background: #2a2a2a;
+            color: #555;
+            cursor: not-allowed;
+            /* Visual de "desabilitado" enquanto o Supabase processa o salvamento,
+               evitando que o usuário clique múltiplas vezes */
+        }
+
+        .add-cancel-row { text-align: right; }
+        /* Alinha o link "cancelar" à direita */
+
+        .add-cancel-link {
+            font-size: 11px;
+            color: #555;
+            cursor: pointer;
+            text-decoration: underline;
+            /* Link textual discreto para fechar o formulário sem salvar */
+
+            transition: color .15s;
+        }
+
+        .add-cancel-link:hover { color: #999; }
+
+
+        /* ══════════════════════════════════════════════════════════════
+           SEÇÃO: BARRA DE COMANDO (rodapé — entrada de tarefa rápida)
+           ══════════════════════════════════════════════════════════════ */
+
+        .chat-bar {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 12px 16px;
+            border-top: 1px solid #1e1e1e;
+            /* Linha divisória que separa o rodapé do conteúdo acima */
+
+            background: #111;
+
+            flex-shrink: 0;
+            /* O rodapé nunca encolhe — sempre fica visível na parte inferior da tela */
+        }
+
+        .chat-input-row {
+            display: flex;
+            gap: 8px;
+            align-items: flex-end;
+            /* Quando o textarea cresce (múltiplas linhas), o botão fica alinhado à base dele */
+        }
+
+        .chat-input-row textarea {
+            flex: 1;
+            /* Ocupa todo o espaço horizontal, deixando apenas o botão à direita */
+
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 12px;
+            /* Cantos bem arredondados — estilo "chat" */
+
+            color: #e0e0e0;
+            font-size: 13px;
+            padding: 10px 14px;
+
+            resize: none;
+            /* Impede que o usuário redimensione manualmente arrastando o canto inferior-direito.
+               O redimensionamento é feito automaticamente pelo JavaScript (autoResize). */
+
+            height: 44px;
+            /* Altura inicial de 1 linha */
+
+            max-height: 120px;
+            /* Limite máximo — o campo para de crescer após 120px */
+
+            font-family: sans-serif;
+            /* Necessário pois textareas têm fonte monospace por padrão em muitos navegadores */
+
+            line-height: 1.4;
+            /* Espaçamento entre linhas — 1.4x o tamanho da fonte */
+
+            outline: none;
+            transition: border .15s;
+        }
+
+        .chat-input-row textarea:focus { border-color: #7c6ef7; }
+        /* Borda roxa quando o campo está ativo */
+
+        .chat-input-row textarea::placeholder { color: #444; }
+        /* Placeholder discreto */
+
+        .send-btn {
+            background: #7c6ef7;
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            width: 40px;
+            height: 40px;
+            /* Botão quadrado de 40x40px */
+
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            /* Centraliza o ícone SVG dentro do botão */
+
+            flex-shrink: 0;
+            /* Não encolhe mesmo com pouco espaço */
+
+            transition: background .15s;
+        }
+
+        .send-btn:hover { background: #6a5ce0; }
+
+        .send-btn svg {
+            width: 18px;
+            height: 18px;
+            fill: none;
+            /* Sem preenchimento — apenas o contorno é desenhado */
+
+            stroke: #fff;
+            /* Cor da linha: branco */
+
+            stroke-width: 2;
+            /* Espessura da linha em unidades do SVG */
+
+            stroke-linecap: round;
+            /* Extremidades das linhas arredondadas */
+
+            stroke-linejoin: round;
+            /* Ângulos/dobras arredondados nas junções das linhas */
+        }
+
+        .chatgpt-link { text-align: center; }
+        /* Container do link externo, centralizado abaixo do campo de texto */
+
+        .chatgpt-link a {
+            font-size: 11px;
+            color: #444;
+            text-decoration: none;
+            /* Remove o sublinhado padrão dos links */
+
+            transition: color .15s;
+        }
+
+        .chatgpt-link a:hover { color: #888; }
+
+
+        /* ══════════════════════════════════════════════════════════════
+           UTILITÁRIOS (classes auxiliares reutilizáveis)
+           ══════════════════════════════════════════════════════════════ */
+
+        .empty {
+            text-align: center;
+            color: #444;
+            font-size: 13px;
+            padding: 40px 0;
+            /* Mensagem de "nenhuma tarefa ainda" — centralizada com bastante espaço vertical */
+        }
+
+        .loading-row {
+            color: #555;
+            font-size: 13px;
+            text-align: center;
+            padding: 20px 0;
+            /* Mensagem "carregando..." enquanto busca dados do Supabase */
+        }
+
+        .section-label {
+            font-size: 11px;
+            color: #555;
+            text-transform: uppercase;
+            /* Texto em maiúsculas automaticamente */
+
+            letter-spacing: .05em;
+            /* Espaçamento entre letras — estilo de rótulo de seção */
+
+            margin-bottom: 10px;
+        }

@@ -1,0 +1,1646 @@
+<!DOCTYPE html>
+<!-- DOCTYPE diz ao navegador: "este arquivo é um documento HTML moderno" -->
+
+<html lang="pt-BR">
+<!-- <html> é a raiz de tudo. lang="pt-BR" diz que o idioma da página é português do Brasil -->
+
+<head>
+<!-- <head> contém configurações da página que o usuário NÃO vê diretamente -->
+
+    <meta charset="UTF-8">
+    <!-- charset="UTF-8" permite usar letras acentuadas (ã, é, ç...) sem aparecer como símbolos estranhos -->
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Faz a página se adaptar ao tamanho da tela do celular (responsividade) -->
+
+    <title>Tarefas</title>
+    <!-- Texto que aparece na aba do navegador -->
+
+    <style>
+    /* Tudo dentro de <style> é CSS — linguagem que define a aparência visual da página */
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        /*
+          O asterisco (*) seleciona TODOS os elementos da página.
+          box-sizing: border-box → o tamanho dos elementos inclui borda e espaço interno (mais fácil de calcular tamanhos)
+          margin: 0 → remove o espaço EXTERNO padrão dos elementos
+          padding: 0 → remove o espaço INTERNO padrão dos elementos
+          Isso serve para "zerar" os estilos padrão do navegador e ter controle total
+        */
+
+        body { font-family: sans-serif; background: #111; color: #e0e0e0; height: 100vh; display: flex; flex-direction: column; }
+        /*
+          body é o corpo da página (o que fica visível)
+          font-family: sans-serif → fonte sem serifa (mais limpa)
+          background: #111 → fundo quase preto (cor em hexadecimal)
+          color: #e0e0e0 → texto cinza claro (cor padrão de todo texto)
+          height: 100vh → a página ocupa 100% da altura da tela (vh = viewport height)
+          display: flex + flex-direction: column → organiza os elementos filhos em coluna (um embaixo do outro)
+        */
+
+        .shell { display: flex; flex-direction: column; height: 100%; max-width: 720px; margin: 0 auto; width: 100%; }
+        /*
+          .shell é o container principal (caixa que envolve tudo)
+          display: flex; flex-direction: column → conteúdo em coluna
+          height: 100% → ocupa toda a altura disponível
+          max-width: 720px → nunca fica mais largo que 720 pixels (boa largura para leitura)
+          margin: 0 auto → centraliza horizontalmente na tela
+          width: 100% → ocupa toda a largura disponível (até o limite de 720px)
+        */
+
+        /* ═══════════════════════════════════════════════════════════
+           ESTILOS DAS ABAS (botões "Lista" e "Calendário")
+           ═══════════════════════════════════════════════════════════ */
+
+        .tabs { display: flex; gap: 4px; padding: 12px 16px 0; border-bottom: 1px solid #222; background: #111; }
+        /*
+          .tabs é a barra que contém os botões de aba
+          display: flex → coloca os botões lado a lado (em linha)
+          gap: 4px → espaço de 4 pixels entre cada botão
+          padding: 12px 16px 0 → espaço interno: 12px em cima, 16px nos lados, 0 embaixo
+          border-bottom → linha fina escura abaixo das abas
+          background: #111 → fundo preto igual ao da página
+        */
+
+        .tab { padding: 8px 16px; border-radius: 8px 8px 0 0; font-size: 13px; cursor: pointer; color: #888; background: transparent; border: none; border-bottom: 2px solid transparent; transition: all .15s; }
+        /*
+          .tab é cada botão de aba individualmente
+          padding: 8px 16px → espaço interno vertical/horizontal
+          border-radius: 8px 8px 0 0 → cantos arredondados só em cima (formato de aba)
+          font-size: 13px → tamanho do texto
+          cursor: pointer → muda o cursor para "mãozinha" ao passar o mouse
+          color: #888 → texto cinza médio (aba inativa)
+          background: transparent → fundo transparente
+          border: none → sem borda
+          border-bottom: 2px solid transparent → borda inferior invisível (mas reserva espaço para quando ativar)
+          transition: all .15s → qualquer mudança visual acontece suavemente em 0.15 segundos
+        */
+
+        .tab.active { color: #fff; border-bottom: 2px solid #7c6ef7; background: #1a1a1a; }
+        /*
+          .tab.active → estilo da aba SELECIONADA (ativa)
+          color: #fff → texto branco
+          border-bottom: 2px solid #7c6ef7 → linha roxa embaixo (indica seleção)
+          background: #1a1a1a → fundo levemente mais claro que o preto
+        */
+
+        .tab:hover:not(.active) { color: #ccc; }
+        /*
+          Quando o mouse passa por cima de uma aba que NÃO está ativa
+          color: #ccc → texto fica mais claro (cinza claro) como feedback visual
+        */
+
+        /* ═══════════════════════════════════════════════════════════
+           ESTILOS DAS VIEWS (as "telas" que aparecem ao trocar de aba)
+           ═══════════════════════════════════════════════════════════ */
+
+        .view { display: none; flex: 1; overflow-y: auto; padding: 16px; }
+        /*
+          .view é cada painel de conteúdo (Lista ou Calendário)
+          display: none → por padrão ficam ESCONDIDOS
+          flex: 1 → quando visível, ocupa todo o espaço restante da tela
+          overflow-y: auto → se o conteúdo for grande demais, aparece barra de rolagem vertical
+          padding: 16px → espaço interno de 16px em todos os lados
+        */
+
+        .view.active { display: block; }
+        /*
+          Quando a view tem a classe "active", ela aparece
+          display: block → torna o elemento visível
+        */
+
+        /* ═══════════════════════════════════════════════════════════
+           ESTILOS DA LISTA DE TAREFAS
+           ═══════════════════════════════════════════════════════════ */
+
+        .task-list { display: flex; flex-direction: column; gap: 8px; }
+        /*
+          Container que agrupa todos os cartões de tarefa
+          display: flex; flex-direction: column → cartões empilhados verticalmente
+          gap: 8px → 8 pixels de espaço entre cada cartão
+        */
+
+        .task-card { display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; border-radius: 10px; border: 1px solid #222; background: #1a1a1a; }
+        /*
+          Cada cartão individual de tarefa
+          display: flex → conteúdo interno lado a lado (bolinha + texto + botão)
+          align-items: flex-start → alinha tudo pelo topo (não pelo centro)
+          gap: 12px → espaço entre a bolinha, o texto e o botão
+          padding: 12px 14px → espaço interno
+          border-radius: 10px → cantos bem arredondados
+          border: 1px solid #222 → borda fina escura
+          background: #1a1a1a → fundo cinza muito escuro
+        */
+
+        .task-card .dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; background: #888; }
+        /*
+          A bolinha colorida de status no canto esquerdo do cartão
+          width/height: 10px → tamanho da bolinha
+          border-radius: 50% → transforma o quadrado em círculo perfeito
+          margin-top: 4px → desce um pouco para alinhar com o texto
+          flex-shrink: 0 → não deixa a bolinha encolher mesmo com pouco espaço
+          background: #888 → cor padrão cinza (é sobrescrita pelas classes alta/media/baixa)
+        */
+
+        .task-body { flex: 1; min-width: 0; }
+        /*
+          Área central do cartão que contém título, descrição e etiquetas
+          flex: 1 → ocupa todo espaço disponível entre a bolinha e o botão
+          min-width: 0 → truque técnico que permite o texto ser cortado com "..." se for muito longo
+        */
+
+        .task-title { font-size: 14px; font-weight: 500; color: #eee; margin-bottom: 4px; }
+        /*
+          Título da tarefa
+          font-size: 14px → tamanho do texto
+          font-weight: 500 → negrito médio (não muito forte)
+          color: #eee → quase branco
+          margin-bottom: 4px → espaço abaixo antes da descrição
+        */
+
+        .task-desc { font-size: 12px; color: #888; margin-bottom: 6px; }
+        /*
+          Descrição da tarefa (texto secundário)
+          font-size: 12px → menor que o título
+          color: #888 → cinza médio (menos importante que o título)
+          margin-bottom: 6px → espaço abaixo antes das etiquetas
+        */
+
+        .task-meta { display: flex; flex-wrap: wrap; gap: 6px; }
+        /*
+          Área das etiquetas (badges) de status, prioridade, etc.
+          display: flex → etiquetas lado a lado
+          flex-wrap: wrap → se não couber na linha, quebra para a próxima linha
+          gap: 6px → espaço entre as etiquetas
+        */
+
+        .badge { font-size: 11px; padding: 2px 8px; border-radius: 20px; background: #222; color: #999; }
+        /*
+          Etiqueta/pílula genérica (usada para status, datas, etc.)
+          font-size: 11px → texto bem pequeno
+          padding: 2px 8px → espaço interno pequeno vertical, maior horizontal
+          border-radius: 20px → formato de pílula bem arredondada
+          background: #222; color: #999 → fundo escuro com texto cinza
+        */
+
+        /* Cores específicas para cada nível de prioridade */
+
+        .badge.alta  { background: #3d1f1f; color: #f09595; }
+        /* Prioridade ALTA: fundo vermelho escuro, texto vermelho claro */
+
+        .badge.media { background: #3d2d0f; color: #fac775; }
+        /* Prioridade MÉDIA: fundo laranja escuro, texto laranja claro */
+
+        .badge.baixa { background: #0f2e20; color: #5dcaa5; }
+        /* Prioridade BAIXA: fundo verde escuro, texto verde claro */
+
+        /* Cores das bolinhas de status por prioridade */
+
+        .dot.alta  { background: #e24b4a; }
+        /* Bolinha vermelha → prioridade alta */
+
+        .dot.media { background: #ef9f27; }
+        /* Bolinha laranja → prioridade média */
+
+        .dot.baixa { background: #1d9e75; }
+        /* Bolinha verde → prioridade baixa */
+
+        .dot.overdue { background: #e24b4a; box-shadow: 0 0 0 3px #3d1f1f; }
+        /*
+          Tarefa VENCIDA (prazo já passou)
+          background: vermelho
+          box-shadow: anel vermelho escuro ao redor da bolinha (como um alerta pulsante)
+        */
+
+        .dot.soon    { background: #ef9f27; box-shadow: 0 0 0 3px #3d2d0f; }
+        /*
+          Tarefa que vence EM MENOS DE 1 DIA
+          background: laranja
+          box-shadow: anel laranja escuro ao redor (alerta de urgência)
+        */
+
+        .del-btn { background: transparent; border: none; color: #444; font-size: 14px; cursor: pointer; padding: 4px; border-radius: 4px; transition: color .15s; flex-shrink: 0; }
+        /*
+          Botão "✕" para deletar a tarefa
+          background: transparent; border: none → sem fundo nem borda (parece apenas um ícone)
+          color: #444 → cinza escuro (discreto)
+          cursor: pointer → cursor de mãozinha
+          padding: 4px → área clicável um pouco maior que o ícone
+          border-radius: 4px → cantos suaves
+          transition: color .15s → muda de cor suavemente ao passar o mouse
+          flex-shrink: 0 → não encolhe
+        */
+
+        .del-btn:hover { color: #e24b4a; }
+        /* Quando o mouse passa sobre o botão de deletar, fica vermelho */
+
+        .empty { text-align: center; color: #444; font-size: 13px; padding: 40px 0; }
+        /* Mensagem "nenhuma tarefa ainda" quando a lista está vazia */
+
+        .loading-row { color: #555; font-size: 13px; text-align: center; padding: 20px 0; }
+        /* Mensagem "carregando..." enquanto busca dados do banco */
+
+        .section-label { font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 10px; }
+        /*
+          Rótulo "POR IMPORTÂNCIA" acima da lista
+          text-transform: uppercase → transforma em maiúsculas automaticamente
+          letter-spacing: .05em → espaço extra entre letras (estilo de rótulo)
+        */
+
+        /* ═══════════════════════════════════════════════════════════
+           ESTILOS DO CALENDÁRIO
+           ═══════════════════════════════════════════════════════════ */
+
+        .cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+        /*
+          Barra de navegação do calendário (seta ‹ | Abril 2025 | seta ›)
+          display: flex; align-items: center → itens lado a lado e alinhados ao centro
+          justify-content: space-between → seta esquerda, mês no centro, seta direita (distribuídos)
+          margin-bottom: 12px → espaço abaixo antes do calendário
+        */
+
+        .cal-nav button { background: #1a1a1a; border: 1px solid #333; color: #aaa; border-radius: 6px; padding: 4px 12px; cursor: pointer; font-size: 13px; }
+        /* Botões de seta de navegação do mês */
+
+        .cal-nav button:hover { color: #fff; border-color: #555; }
+        /* Efeito hover nos botões: texto branco e borda mais clara */
+
+        .cal-nav span { font-size: 14px; color: #ccc; font-weight: 500; }
+        /* Texto com o nome do mês e ano */
+
+        .cal-header { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; margin-bottom: 4px; }
+        /*
+          Linha com os nomes dos dias da semana (Dom, Seg, Ter...)
+          display: grid → layout em grade
+          grid-template-columns: repeat(7, 1fr) → 7 colunas de tamanho igual (uma por dia da semana)
+          gap: 2px → espaço mínimo entre as células
+        */
+
+        .cal-day-label { text-align: center; font-size: 11px; color: #555; padding: 4px 0; }
+        /* Cada rótulo de dia da semana (Dom, Seg, etc.) */
+
+        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+        /*
+          Grade principal com os dias do mês
+          Igual ao cal-header: 7 colunas para os 7 dias da semana
+        */
+
+        .cal-cell { min-height: 64px; border-radius: 6px; background: #1a1a1a; border: 1px solid #222; padding: 4px; font-size: 11px; }
+        /*
+          Cada célula de dia no calendário
+          min-height: 64px → altura mínima (cresce se tiver muitas tarefas)
+          border-radius: 6px → cantos levemente arredondados
+        */
+
+        .cal-cell .day-num { color: #555; font-size: 10px; margin-bottom: 2px; }
+        /* Número do dia dentro da célula do calendário */
+
+        .cal-cell.today { border-color: #7c6ef7; }
+        /* Célula do dia de HOJE tem borda roxa */
+
+        .cal-cell.today .day-num { color: #7c6ef7; font-weight: 500; }
+        /* Número do dia de hoje fica roxo e em negrito */
+
+        .cal-task { border-radius: 4px; padding: 2px 4px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 10px; cursor: default; }
+        /*
+          Cada tarefa miniatura mostrada no calendário
+          white-space: nowrap → texto não quebra linha
+          overflow: hidden → esconde o que ultrapassar a largura da célula
+          text-overflow: ellipsis → adiciona "..." quando o texto é cortado
+          cursor: default → cursor normal (não mãozinha, pois não é clicável)
+        */
+
+        /* Cores das tarefas no calendário, seguindo o mesmo padrão da lista */
+
+        .cal-task.alta  { background: #3d1f1f; color: #f09595; }
+        .cal-task.media { background: #3d2d0f; color: #fac775; }
+        .cal-task.baixa { background: #0f2e20; color: #5dcaa5; }
+
+        /* ═══════════════════════════════════════════════════════════
+           ESTILOS DA BARRA DE COMANDO (onde digita nova tarefa)
+           ═══════════════════════════════════════════════════════════ */
+
+        .chat-bar { display: flex; flex-direction: column; gap: 8px; padding: 12px 16px; border-top: 1px solid #1e1e1e; background: #111; }
+        /*
+          Barra fixa no rodapé da tela
+          display: flex; flex-direction: column → conteúdo em coluna (campo de texto em cima, link embaixo)
+          border-top → linha divisória no topo da barra
+        */
+
+        .chat-input-row { display: flex; gap: 8px; align-items: flex-end; }
+        /*
+          Linha com o campo de texto e o botão de enviar, lado a lado
+          align-items: flex-end → alinha pelo rodapé (quando o textarea cresce, o botão fica embaixo)
+        */
+
+        .chat-input-row textarea { flex: 1; background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px; color: #e0e0e0; font-size: 13px; padding: 10px 14px; resize: none; height: 44px; max-height: 120px; font-family: sans-serif; line-height: 1.4; outline: none; transition: border .15s; }
+        /*
+          Campo de texto para digitar a tarefa
+          flex: 1 → ocupa todo o espaço, deixando apenas o botão à direita
+          resize: none → impede o usuário de redimensionar manualmente (o JS faz isso automaticamente)
+          height: 44px → altura inicial de uma linha
+          max-height: 120px → limite máximo de altura (não cresce infinitamente)
+          outline: none → remove a borda azul padrão do navegador ao focar
+          transition: border .15s → a borda muda de cor suavemente ao focar
+        */
+
+        .chat-input-row textarea:focus { border-color: #7c6ef7; }
+        /* Quando o usuário clica no campo para digitar, a borda fica roxa */
+
+        .chat-input-row textarea::placeholder { color: #444; }
+        /* Texto de exemplo (placeholder) fica cinza escuro e discreto */
+
+        .send-btn { background: #7c6ef7; border: none; border-radius: 10px; color: #fff; width: 40px; height: 40px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background .15s; }
+        /*
+          Botão de enviar (seta roxa)
+          background: #7c6ef7 → roxo
+          width/height: 40px → botão quadrado
+          display: flex; align-items/justify-content: center → centraliza o ícone dentro do botão
+        */
+
+        .send-btn:hover { background: #6a5ce0; }
+        /* Botão fica um roxo mais escuro ao passar o mouse */
+
+        .send-btn svg { width: 18px; height: 18px; fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        /*
+          Ícone SVG (a setinha de enviar) dentro do botão
+          fill: none → sem preenchimento (só o contorno)
+          stroke: #fff → linha branca
+          stroke-width: 2 → espessura da linha
+          stroke-linecap/linejoin: round → extremidades e dobras arredondadas (visual mais suave)
+        */
+
+        .chatgpt-link { text-align: center; }
+        /* Container do link para o ChatGPT, centralizado */
+
+        .chatgpt-link a { font-size: 11px; color: #444; text-decoration: none; transition: color .15s; }
+        /*
+          O link em si
+          text-decoration: none → remove o sublinhado padrão dos links
+          color: #444 → cinza escuro e discreto
+        */
+
+        .chatgpt-link a:hover { color: #888; }
+        /* Link fica mais visível ao passar o mouse */
+
+        /* ═══════════════════════════════════════════════════════════
+        MODAL DE DIA (aparece ao clicar num dia do calendário)
+   ═══════════════════════════════════════════════════════════ */
+
+        /* Fundo escurecido que cobre a tela toda */
+        .modal-overlay {
+            display: none;                  /* escondido por padrão */
+            position: fixed;                /* fica fixo mesmo ao rolar a página */
+            inset: 0;                       /* ocupa tudo: top/right/bottom/left = 0 */
+            background: rgba(0,0,0,0.7);    /* preto com 70% de opacidade */
+            z-index: 100;                   /* fica na frente de tudo */
+            align-items: center;            /* centraliza verticalmente */
+            justify-content: center;        /* centraliza horizontalmente */
+            padding: 16px;
+        }
+        .modal-overlay.open {
+            display: flex;                  /* quando aberto, usa flex para centralizar o painel */
+            animation: fadeIn .15s ease;    /* aparece suavemente */
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(.97); }
+            to   { opacity: 1; transform: scale(1); }
+        }
+
+        /* Painel branco (escuro no tema dark) do modal */
+        .modal-panel {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 14px;
+            width: 100%;
+            max-width: 480px;
+            max-height: 85vh;               /* não ultrapassa 85% da altura da tela */
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Cabeçalho do modal: "Quarta, 20 de Abril" + botão fechar */
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 18px 12px;
+            border-bottom: 1px solid #222;
+        }
+        .modal-header h2 {
+            font-size: 15px;
+            font-weight: 600;
+            color: #eee;
+        }
+        .modal-close {
+            background: transparent;
+            border: none;
+            color: #555;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: color .15s;
+        }
+        .modal-close:hover { color: #eee; }
+
+        /* Área de rolagem com as tarefas do dia + formulário */
+        .modal-body {
+            overflow-y: auto;
+            padding: 14px 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* Sub-título dentro do modal: "Tarefas do dia" e "Nova tarefa" */
+        .modal-section-title {
+            font-size: 11px;
+            color: #555;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            margin-bottom: 8px;
+        }
+
+        /* Lista de tarefas dentro do modal (mesmo estilo da lista principal) */
+        .modal-task-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .modal-empty {
+            font-size: 12px;
+            color: #444;
+            text-align: center;
+            padding: 12px 0;
+        }
+
+        /* Formulário de nova tarefa dentro do modal */
+        .modal-form {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .modal-input {
+            background: #111;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            color: #e0e0e0;
+            font-size: 13px;
+            padding: 9px 12px;
+            font-family: sans-serif;
+            outline: none;
+            transition: border .15s;
+            width: 100%;
+        }
+        .modal-input:focus { border-color: #7c6ef7; }
+        .modal-input::placeholder { color: #444; }
+
+        /* Linha com seletor de prioridade e botão salvar */
+        .modal-form-row {
+            display: flex;
+            gap: 8px;
+        }
+        .modal-select {
+            flex: 1;
+            background: #111;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            color: #e0e0e0;
+            font-size: 13px;
+            padding: 9px 12px;
+            outline: none;
+            cursor: pointer;
+        }
+        .modal-submit {
+            background: #7c6ef7;
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 13px;
+            padding: 9px 20px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background .15s;
+            white-space: nowrap;
+        }
+        .modal-submit:hover { background: #6a5ce0; }
+        .modal-submit:disabled { background: #333; color: #555; cursor: not-allowed; }
+
+        /* Células do calendário ficam clicáveis */
+        .cal-cell.clickable {
+            cursor: pointer;
+            transition: border-color .15s, background .15s;
+        }
+        .cal-cell.clickable:hover {
+            border-color: #7c6ef7;
+            background: #1f1f2e;   /* levemente roxo ao passar o mouse */
+        }
+
+    </style>
+</head>
+
+<body>
+<!-- <body> é onde fica tudo que o usuário vê na tela -->
+
+<div class="shell">
+<!-- Shell: caixa principal que centraliza e organiza toda a interface -->
+
+    <!-- ═══════════════════════════════════════════════════════
+         ABAS DE NAVEGAÇÃO
+         ═══════════════════════════════════════════════════════ -->
+    <div class="tabs">
+        <!--
+          Dois botões de aba.
+          onclick="switchTab('list')" chama a função JavaScript que mostra a lista
+          onclick="switchTab('cal')" chama a função que mostra o calendário
+          A primeira começa com a classe "active" (está selecionada)
+        -->
+        <button class="tab active" onclick="switchTab('list')">Lista</button>
+        <button class="tab" onclick="switchTab('cal')">Calendário</button>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════
+         VIEW: LISTA DE TAREFAS
+         ═══════════════════════════════════════════════════════ -->
+    <div class="view active" id="view-list">
+        <!--
+          Este painel começa visível ("active") pois Lista é a aba padrão.
+          id="view-list" permite que o JavaScript encontre e mostre/esconda este painel.
+        -->
+
+        <div id="task-list" class="task-list">
+            <!--
+              Container onde os cartões de tarefa serão inseridos pelo JavaScript.
+              O texto "carregando tarefas..." aparece enquanto busca os dados.
+              Quando os dados chegam, o JS substitui este conteúdo pelos cartões reais.
+            -->
+            <div class="loading-row">carregando tarefas...</div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════
+         VIEW: CALENDÁRIO
+         ═══════════════════════════════════════════════════════ -->
+    <div class="view" id="view-cal">
+        <!--
+          Este painel começa escondido (sem "active").
+          Aparece quando o usuário clica na aba "Calendário".
+        -->
+
+        <!-- Barra de navegação: botões de avançar/voltar mês -->
+        <div class="cal-nav">
+            <button onclick="calPrev()">&#8249;</button>
+            <!-- &#8249; é o código HTML para o caractere "‹" (seta para esquerda) -->
+            <!-- onclick="calPrev()" → ao clicar, vai para o mês anterior -->
+
+            <span id="cal-month-label"></span>
+            <!-- Aqui o JavaScript vai escrever o nome do mês e ano (ex: "Abril 2025") -->
+
+            <button onclick="calNext()">&#8250;</button>
+            <!-- &#8250; é o código HTML para o caractere "›" (seta para direita) -->
+            <!-- onclick="calNext()" → ao clicar, vai para o próximo mês -->
+        </div>
+
+        <!-- Linha com os nomes dos dias da semana -->
+        <div class="cal-header">
+            <div class="cal-day-label">Dom</div>
+            <div class="cal-day-label">Seg</div>
+            <div class="cal-day-label">Ter</div>
+            <div class="cal-day-label">Qua</div>
+            <div class="cal-day-label">Qui</div>
+            <div class="cal-day-label">Sex</div>
+            <div class="cal-day-label">Sáb</div>
+        </div>
+
+        <!-- Grade do calendário: o JavaScript vai preencher os dias aqui -->
+        <div class="cal-grid" id="cal-grid"></div>
+        <!-- id="cal-grid" permite o JavaScript encontrar esta grade e inserir as células dos dias -->
+
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════
+         BARRA DE COMANDO (rodapé para adicionar tarefas)
+         ═══════════════════════════════════════════════════════ -->
+    <div class="chat-bar">
+
+        <div class="chat-input-row">
+
+            <textarea id="command"
+                placeholder="Título; Descrição; Prioridade; Prazo (DD/MM/AAAA)"
+                onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();salvarTarefa(event)}"
+                oninput="autoResize(this)">
+            </textarea>
+            <!--
+              Campo de texto onde o usuário digita a tarefa.
+
+              id="command" → identificador para o JavaScript ler o que foi digitado.
+
+              placeholder → texto de exemplo que some quando o usuário começa a digitar.
+              Mostra o formato esperado: "Título; Descrição; Prioridade; Prazo (DD/MM/AAAA)"
+
+              onkeydown → executa código quando uma tecla é pressionada:
+                event.key === 'Enter' → verifica se foi a tecla Enter
+                !event.shiftKey → e que Shift NÃO esteja pressionado (Shift+Enter = quebra de linha, Enter sozinho = envia)
+                event.preventDefault() → cancela o comportamento padrão do Enter (que quebraria linha)
+                salvarTarefa(event) → chama a função de salvar
+
+              oninput="autoResize(this)" → toda vez que o usuário digita, ajusta a altura do campo
+              automaticamente (o campo cresce conforme o texto aumenta)
+            -->
+
+            <button class="send-btn" onclick="salvarTarefa(event)" title="Enviar">
+                <!--
+                  Botão de enviar.
+                  onclick="salvarTarefa(event)" → ao clicar, chama a função de salvar
+                  title="Enviar" → tooltip (balãozinho) que aparece ao passar o mouse
+                -->
+
+                <!-- Ícone SVG de avião de papel (seta de enviar) desenhado com código -->
+                <svg viewBox="0 0 24 24">
+                    <!-- viewBox define o tamanho do "canvas" interno do desenho SVG (24x24 unidades) -->
+                    <line x1="22" y1="2" x2="11" y2="13"/>
+                    <!-- Linha diagonal da seta (de x=22,y=2 até x=11,y=13) -->
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                    <!-- Triângulo que forma o corpo do avião de papel -->
+                </svg>
+            </button>
+
+        </div>
+
+        <!-- Link discreto no rodapé que abre uma conversa específica no ChatGPT -->
+        <div class="chatgpt-link">
+            <a href="https://chatgpt.com/c/69e21a90-9214-832a-a2ba-6bd4086f370c" target="_blank">abrir chatgpt ↗</a>
+            <!-- target="_blank" → abre em uma nova aba do navegador -->
+            <!-- ↗ é o ícone de "abrir externo" -->
+        </div>
+
+    </div>
+
+</div>
+<!-- Fim da .shell -->
+
+<!-- MODAL DE DIA -->
+<div class="modal-overlay" id="day-modal" onclick="handleOverlayClick(event)">
+    <div class="modal-panel">
+
+        <!-- Cabeçalho: data + botão fechar -->
+        <div class="modal-header">
+            <h2 id="modal-date-title">—</h2>
+            <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+
+        <!-- Corpo do modal -->
+        <div class="modal-body">
+
+            <!-- Seção: tarefas existentes neste dia -->
+            <div id="modal-tasks-section">
+                <div class="modal-section-title">Tarefas do dia</div>
+                <div class="modal-task-list" id="modal-task-list">
+                    <!-- preenchido pelo JavaScript -->
+                </div>
+            </div>
+
+            <!-- Seção: formulário para nova tarefa -->
+            <div>
+                <div class="modal-section-title">Nova tarefa</div>
+                <div class="modal-form">
+                    <input
+                        class="modal-input"
+                        id="modal-titulo"
+                        placeholder="Título da tarefa"
+                        type="text"
+                    />
+                    <input
+                        class="modal-input"
+                        id="modal-descricao"
+                        placeholder="Descrição (opcional)"
+                        type="text"
+                    />
+                    <div class="modal-form-row">
+                        <select class="modal-select" id="modal-prioridade">
+                            <option value="baixa">Prioridade baixa</option>
+                            <option value="media" selected>Prioridade média</option>
+                            <option value="alta">Prioridade alta</option>
+                        </select>
+                        <button class="modal-submit" id="modal-save-btn" onclick="salvarTarefaModal()">
+                            Salvar
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     JAVASCRIPT — A LÓGICA QUE FAZ TUDO FUNCIONAR
+     ═══════════════════════════════════════════════════════════════ -->
+
+<!-- Carrega a biblioteca do Supabase (banco de dados na nuvem) do CDN -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!--
+  CDN = Content Delivery Network: servidor externo que hospeda a biblioteca.
+  Esta linha baixa o Supabase automaticamente quando a página carrega.
+  O Supabase é quem salva e recupera as tarefas na nuvem.
+-->
+
+<!-- Carrega o arquivo local que configura a conexão com o Supabase (URL + chave de acesso) -->
+<script src="scripts/supabase_connection.js"></script>
+<!--
+  Este arquivo separado contém as credenciais (endereço e senha) do banco de dados.
+  Fica em arquivo separado por segurança e organização.
+  Após carregar, cria uma variável global chamada "supabaseClient" que usamos abaixo.
+-->
+
+<script>
+/* ─────────────────────────────────────────────────────────────────
+   VARIÁVEIS GLOBAIS
+   Guardadas fora de qualquer função para serem acessíveis em todo o código
+   ───────────────────────────────────────────────────────────────── */
+
+    var allTasks = [];
+    /*
+      Array (lista) que armazena todas as tarefas carregadas do banco.
+      Começa vazia e é preenchida quando loadList() busca os dados.
+      Usada pelo calendário para saber quais tarefas mostrar em cada dia.
+    */
+
+    var calYear, calMonth;
+    /*
+      Variáveis que controlam qual mês/ano o calendário está exibindo.
+      Declaradas aqui para serem acessíveis pelas funções calPrev() e calNext().
+    */
+
+    (function() {
+        /*
+          IIFE (Função Imediatamente Invocada): função que roda uma só vez,
+          imediatamente quando a página carrega.
+          Serve para inicializar as variáveis sem "poluir" o escopo global.
+        */
+        var d = new Date();
+        /* new Date() cria um objeto com a data e hora atual */
+
+        calYear  = d.getFullYear();
+        /* getFullYear() retorna o ano atual com 4 dígitos (ex: 2025) */
+
+        calMonth = d.getMonth();
+        /*
+          getMonth() retorna o mês atual de 0 a 11 (janeiro=0, fevereiro=1, ..., dezembro=11)
+          Essa convenção estranha é padrão do JavaScript.
+        */
+    }());
+    /* O "()" no final executa a função imediatamente */
+
+
+/* ─────────────────────────────────────────────────────────────────
+   FUNÇÕES UTILITÁRIAS (pequenas funções de apoio)
+   ───────────────────────────────────────────────────────────────── */
+
+    function autoResize(el) {
+        /*
+          Faz o textarea crescer verticalmente conforme o usuário digita.
+          el = o elemento textarea (passado como "this" no HTML)
+        */
+        el.style.height = '44px';
+        /*
+          Primeiro reseta para a altura mínima.
+          Isso é necessário para que o campo possa ENCOLHER se o usuário apagar texto.
+        */
+
+        el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+        /*
+          scrollHeight = altura total do conteúdo digitado (mesmo o que está "escondido")
+          Math.min(..., 120) = pega o menor valor entre o conteúdo e 120px (o máximo)
+          + 'px' = adiciona a unidade de medida (ex: "88px")
+          Resultado: o campo cresce até 120px e para de crescer depois disso
+        */
+    }
+
+    function switchTab(t) {
+        /*
+          Troca a aba ativa. Recebe 't' = 'list' ou 'cal'
+        */
+
+        document.querySelectorAll('.tab').forEach((b, i) => {
+            /*
+              querySelectorAll('.tab') → encontra todos os elementos com classe "tab"
+              forEach → itera sobre cada um. b = o botão, i = o índice (0 ou 1)
+            */
+            b.classList.toggle('active', ['list', 'cal'][i] === t);
+            /*
+              ['list', 'cal'][i] → pega 'list' quando i=0, 'cal' quando i=1
+              === t → verifica se bate com a aba pedida
+              classList.toggle('active', true/false) → adiciona 'active' se true, remove se false
+              Resultado: apenas o botão da aba pedida fica com a classe 'active'
+            */
+        });
+
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        /*
+          Remove a classe 'active' de TODAS as views (esconde tudo)
+        */
+
+        document.getElementById('view-' + t).classList.add('active');
+        /*
+          'view-' + t → monta o id do painel (ex: 'view-list' ou 'view-cal')
+          Encontra o painel certo e adiciona 'active' (torna visível)
+        */
+
+        if (t === 'cal') renderCalendar();
+        /*
+          Se for a aba do calendário, renderiza o calendário.
+          Feito aqui pois o calendário precisa ser desenhado quando se torna visível.
+        */
+    }
+
+
+/* ─────────────────────────────────────────────────────────────────
+   FUNÇÕES DO SUPABASE (comunicação com o banco de dados)
+   ───────────────────────────────────────────────────────────────── */
+
+    async function fetchTarefas() {
+        /*
+          Busca todas as tarefas do banco de dados.
+          "async" significa que esta função é assíncrona: ela inicia uma operação
+          demorada (buscar dados na internet) e espera terminar antes de continuar.
+        */
+        return await supabaseClient
+            /* supabaseClient é o objeto de conexão criado pelo arquivo supabase_connection.js */
+            .from('tarefas')
+            /* Acessa a tabela chamada 'tarefas' no banco */
+            .select('*')
+            /* Seleciona TODAS as colunas (* = tudo) */
+            .order('created_at', { ascending: false });
+            /*
+              Ordena pelo campo 'created_at' (data de criação)
+              ascending: false → ordem decrescente (mais recentes primeiro)
+            */
+    }
+
+    async function deleteTarefa(id) {
+        /*
+          Deleta uma tarefa do banco de dados pelo ID.
+          id = o identificador único da tarefa a ser removida.
+        */
+        return await supabaseClient
+            .from('tarefas')
+            .delete()
+            /* Operação de deleção */
+            .eq('id', id);
+            /* .eq() = "equal" (igual): filtra apenas o registro onde id = o id passado */
+    }
+
+
+/* ─────────────────────────────────────────────────────────────────
+   ALGORITMO DE IMPORTÂNCIA
+   Calcula automaticamente o quanto uma tarefa é importante/urgente
+   ─────────────────────────────────────────────────────────────────
+   
+   FÓRMULA: score = prioridade + urgencia + tempo_parado
+   
+   Componente 1 - PRIORIDADE (definida pelo usuário ao criar):
+     alta  = 3 pontos
+     media = 2 pontos
+     baixa = 1 ponto
+   
+   Componente 2 - URGÊNCIA (baseado no prazo):
+     prazo em 1-2 dias = +3 pontos  (urgente!)
+     prazo em 3-5 dias = +2 pontos  (atenção)
+     prazo mais distante = +1 ponto
+     sem prazo definido = 0 pontos
+   
+   Componente 3 - TEMPO PARADO (penalidade por negligeniciar):
+     +1 ponto a cada 3 dias sem atualizar a tarefa
+   
+   CLASSIFICAÇÃO FINAL:
+     score >= 6 → importância ALTA
+     score >= 4 → importância MÉDIA
+     senão      → importância BAIXA
+   ─────────────────────────────────────────────────────────────── */
+
+    function calcularScore(tarefa) {
+        /*
+          Recebe um objeto tarefa e retorna a pontuação numérica de importância.
+        */
+        const now = new Date();
+        /* Data e hora atual para comparar com prazos */
+
+        // ── Componente 1: Prioridade ──
+        const mapPrioridade = { alta: 3, media: 2, baixa: 1 };
+        /*
+          Objeto que mapeia o texto da prioridade para um número.
+          Como um dicionário: chave → valor
+        */
+        const scorePrioridade = mapPrioridade[tarefa.prioridade] || 1;
+        /*
+          Busca no mapa o valor para a prioridade da tarefa.
+          || 1 = se não encontrar (prioridade indefinida), usa 1 como padrão
+        */
+
+        // ── Componente 2: Urgência (prazo) ──
+        let scoreUrgencia = 0;
+        /* Começa em 0 (sem prazo = sem pontos de urgência) */
+
+        if (tarefa.prazo) {
+            /* Só calcula urgência se a tarefa tem prazo definido */
+            const diffDias = (new Date(tarefa.prazo) - now) / 86400000;
+            /*
+              new Date(tarefa.prazo) = converte a string de prazo em objeto de data
+              - now = subtrai a data atual → resultado em milissegundos
+              / 86400000 = divide por milissegundos em 1 dia (1000ms × 60s × 60min × 24h)
+              Resultado: número de dias que faltam para o prazo (negativo = vencido)
+            */
+
+            if (diffDias <= 2)      scoreUrgencia = 3; /* menos de 2 dias: urgente */
+            else if (diffDias <= 5) scoreUrgencia = 2; /* 3 a 5 dias: atenção */
+            else                    scoreUrgencia = 1; /* mais de 5 dias: leve */
+        }
+
+        // ── Componente 3: Tempo parado ──
+        const ultimaAtualizacao = new Date(tarefa.updated_at || tarefa.created_at);
+        /*
+          Usa updated_at (última atualização) se existir, senão usa created_at (criação)
+          O || (OU lógico) retorna o primeiro valor que não seja nulo/undefined
+        */
+
+        const diasParado = (now - ultimaAtualizacao) / 86400000;
+        /* Quantos dias a tarefa não é atualizada (mesmo cálculo de dias que o prazo) */
+
+        const scoreTempoParado = Math.floor(diasParado / 3);
+        /*
+          Math.floor() = arredonda para baixo (ex: 2.9 vira 2)
+          diasParado / 3 = a cada 3 dias parado, ganha 1 ponto
+          Exemplos: 0-2 dias = 0pts, 3-5 dias = 1pt, 6-8 dias = 2pts, etc.
+        */
+
+        return scorePrioridade + scoreUrgencia + scoreTempoParado;
+        /* Retorna a soma dos três componentes */
+    }
+
+    function scoreParaLabel(score) {
+        /*
+          Converte a pontuação numérica em uma string de categoria.
+          Usada para aplicar as classes CSS corretas de cor.
+        */
+        if (score >= 6) return 'alta';
+        if (score >= 4) return 'media';
+        return 'baixa';
+        /* Se nenhuma condição acima for verdadeira, retorna 'baixa' */
+    }
+
+
+/* ─────────────────────────────────────────────────────────────────
+   SALVAR TAREFA (quando o usuário envia o formulário)
+   ───────────────────────────────────────────────────────────────── */
+
+    async function salvarTarefa(event) {
+        /*
+          Lê o que foi digitado, processa e salva no banco de dados.
+          event = o evento de clique ou pressionamento de tecla
+        */
+        event.preventDefault();
+        /*
+          Cancela o comportamento padrão do evento.
+          No caso do formulário, impede que a página recarregue.
+        */
+
+        const command = document.getElementById('command').value;
+        /* Pega o texto digitado no campo de texto */
+
+        const parts = command.split(';').map(s => s.trim());
+        /*
+          split(';') → divide o texto nos pontos onde há ";"
+          Exemplo: "Reunião; Preparar slides; alta; 20/04/2025"
+          Vira: ["Reunião", " Preparar slides", " alta", " 20/04/2025"]
+          
+          .map(s => s.trim()) → remove espaços do início e fim de cada parte
+          Resultado: ["Reunião", "Preparar slides", "alta", "20/04/2025"]
+        */
+
+        const titulo     = parts[0] || '';
+        /* Primeira parte = título. || '' garante string vazia se não houver */
+
+        const descricao  = parts[1] || '';
+        /* Segunda parte = descrição */
+
+        const prioridade = (parts[2] || 'media').toLowerCase();
+        /*
+          Terceira parte = prioridade.
+          || 'media' = usa 'media' como padrão se não informado
+          .toLowerCase() = converte para minúsculas (garante consistência)
+        */
+
+        // Converte o prazo do formato DD/MM/AAAA para AAAA-MM-DD (formato que o banco aceita)
+        let prazo = null;
+        /* Começa nulo (sem prazo) */
+
+        if (parts[3]) {
+            /* Se o usuário informou uma quarta parte (prazo) */
+            const [dia, mes, ano] = parts[3].split('/');
+            /*
+              split('/') divide "20/04/2025" em ["20", "04", "2025"]
+              Desestruturação: atribui cada valor a uma variável (dia, mes, ano)
+            */
+            prazo = `${ano}-${mes}-${dia}`;
+            /*
+              Template string: monta o prazo no formato ISO (AAAA-MM-DD)
+              Exemplo: "20/04/2025" vira "2025-04-20"
+              Banks de dados geralmente preferem o formato ISO.
+            */
+        }
+
+        const { data } = await supabaseClient.auth.getUser();
+        /*
+          Busca o usuário atualmente logado.
+          { data } = desestruturação: pega só o campo "data" da resposta
+        */
+        const user = data.user;
+        /* O objeto do usuário logado (contém id, email, etc.) */
+
+        if (!user) {
+            /* Se não há usuário logado, exibe erro e para a execução */
+            alert('Você precisa estar logado!');
+            return; /* "return" sem valor para a execução da função aqui */
+        }
+
+        const { error } = await supabaseClient
+            .from('tarefas')
+            .insert([{
+                /*
+                  .insert() insere um novo registro na tabela.
+                  Recebe um array com um objeto contendo os dados do registro.
+                */
+                titulo,       /* equivale a titulo: titulo (ES6 shorthand) */
+                descricao,
+                prioridade,
+                prazo,
+                status: 'pendente',  /* toda nova tarefa começa como pendente */
+                user_id: user.id     /* associa a tarefa ao usuário logado */
+            }]);
+
+        if (error) {
+            /* Se houve erro ao salvar, mostra a mensagem de erro */
+            alert('Erro: ' + error.message);
+        } else {
+            /* Se salvou com sucesso: */
+            const cmd = document.getElementById('command');
+            cmd.value = '';
+            /* Limpa o campo de texto */
+            cmd.style.height = '44px';
+            /* Reseta a altura para o tamanho mínimo */
+            loadList();
+            /* Recarrega a lista para mostrar a nova tarefa */
+        }
+    }
+
+
+/* ─────────────────────────────────────────────────────────────────
+   FORMATAÇÃO DE DATA
+   ───────────────────────────────────────────────────────────────── */
+
+    function formatDate(date) {
+        /*
+          Converte uma data do formato ISO (AAAA-MM-DD) para o formato brasileiro (DD/MM/AAAA)
+          date = string de data ou null
+        */
+        if (!date) return '';
+        /* Se não há data, retorna string vazia */
+
+        return new Date(date).toLocaleDateString('pt-BR');
+        /*
+          new Date(date) = cria objeto de data
+          .toLocaleDateString('pt-BR') = formata para o padrão brasileiro
+          Exemplo: "2025-04-20" → "20/04/2025"
+        */
+    }
+
+
+/* ─────────────────────────────────────────────────────────────────
+   CARREGAR E RENDERIZAR A LISTA
+   ───────────────────────────────────────────────────────────────── */
+
+    async function loadList() {
+        /*
+          Função principal: busca dados do banco e atualiza a lista na tela.
+          Chamada na inicialização e após salvar/deletar tarefas.
+        */
+        const container = document.getElementById('task-list');
+        /* Encontra o elemento HTML onde a lista será renderizada */
+
+        container.innerHTML = '<div class="loading-row">carregando...</div>';
+        /* Mostra mensagem de carregamento enquanto busca os dados */
+
+        const { data, error } = await fetchTarefas();
+        /*
+          Chama a função que busca dados do Supabase.
+          await = espera a resposta antes de continuar
+          { data, error } = desestrutura a resposta: pega os campos data e error
+        */
+
+        if (error) {
+            /* Se houve erro na busca */
+            container.innerHTML = `<div class="empty">Erro: ${error.message}</div>`;
+            return;
+        }
+
+        allTasks = data || [];
+        /*
+          Salva as tarefas na variável global.
+          || [] = garante array vazio se data for nulo
+        */
+
+        renderList(allTasks);
+        /* Chama a função que transforma os dados em HTML visível */
+
+        renderCalendar();
+        /* Atualiza o calendário com as tarefas recém-carregadas */
+    }
+
+    function renderList(tasks) {
+        /*
+          Transforma o array de tarefas em HTML e insere na página.
+          tasks = array de objetos de tarefa
+        */
+        const container = document.getElementById('task-list');
+
+        if (!tasks.length) {
+            /* Se o array estiver vazio */
+            container.innerHTML = '<div class="empty">nenhuma tarefa ainda.</div>';
+            return;
+        }
+
+        // Ordena do maior score para o menor (mais importante primeiro)
+        tasks.sort((a, b) => calcularScore(b) - calcularScore(a));
+        /*
+          .sort() ordena o array "in place" (modifica o original)
+          A função comparadora: se o resultado for positivo, b vem antes de a
+          calcularScore(b) - calcularScore(a) → score maior fica na frente
+        */
+
+        const now = new Date();
+        let html = '<div class="section-label">por importância</div>';
+        /* Começa o HTML com o rótulo de seção */
+
+        tasks.forEach(t => {
+            /* Itera sobre cada tarefa. t = objeto da tarefa */
+
+            const score = calcularScore(t);
+            /* Calcula a pontuação da tarefa */
+
+            const imp = scoreParaLabel(score);
+            /* Converte pontuação em label: 'alta', 'media' ou 'baixa' */
+
+            // Determina a classe da bolinha de status
+            let dotClass = imp;
+            /* Por padrão, usa a cor da importância calculada */
+
+            if (t.prazo) {
+                const diff = new Date(t.prazo) - now;
+                /* Diferença em milissegundos entre o prazo e agora */
+
+                if (diff < 0)             dotClass = 'overdue';
+                /* Prazo já passou → bolinha vermelha com anel (vencida) */
+
+                else if (diff < 86400000) dotClass = 'soon';
+                /* Prazo em menos de 1 dia (86400000ms = 24h) → bolinha laranja com anel */
+            }
+
+            // Monta o HTML do cartão desta tarefa
+            html += `
+                <div class="task-card" id="item-${t.id}">
+                    <!-- id="item-${t.id}" permite encontrar este cartão para animá-lo ao deletar -->
+
+                    <div class="dot ${dotClass}"></div>
+                    <!-- Bolinha com a classe de cor apropriada -->
+
+                    <div class="task-body">
+                        <div class="task-title">${t.titulo}</div>
+                        <!-- Título da tarefa -->
+
+                        ${t.descricao ? `<div class="task-desc">${t.descricao}</div>` : ''}
+                        <!-- Descrição só aparece se existir (operador ternário: se ? então : senão) -->
+
+                        <div class="task-meta">
+                            <span class="badge">${t.status || '-'}</span>
+                            <!-- Etiqueta de status (ex: "pendente") -->
+
+                            <span class="badge ${t.prioridade}">${t.prioridade || '-'}</span>
+                            <!-- Etiqueta de prioridade com cor (alta/media/baixa) -->
+
+                            <span class="badge ${imp}">importância: ${imp} (${score}pts)</span>
+                            <!-- Etiqueta da importância calculada com a pontuação entre parênteses -->
+
+                            ${t.prazo ? `<span class="badge">prazo: ${formatDate(t.prazo)}</span>` : ''}
+                            <!-- Etiqueta de prazo formatado, só aparece se houver prazo -->
+                        </div>
+                    </div>
+
+                    <button class="del-btn" onclick="removeTask('${t.id}')" title="remover">✕</button>
+                    <!-- Botão X para deletar. passa o id da tarefa para removeTask() -->
+                </div>`;
+        });
+
+        container.innerHTML = html;
+        /* Substitui todo o conteúdo do container pelo HTML montado */
+    }
+
+
+/* ─────────────────────────────────────────────────────────────────
+   REMOVER TAREFA
+   ───────────────────────────────────────────────────────────────── */
+
+    async function removeTask(id) {
+        /*
+          Remove uma tarefa do banco e da tela.
+          id = identificador único da tarefa a remover
+        */
+
+        const el = document.getElementById('item-' + id);
+        /* Encontra o cartão HTML da tarefa pelo id */
+
+        if (el) el.style.opacity = '0.4';
+        /* Esmaece o cartão imediatamente (feedback visual enquanto deleta) */
+
+        const { error } = await deleteTarefa(id);
+        /* Chama a função que deleta no banco de dados */
+
+        if (error) {
+            /* Se houve erro */
+            if (el) el.style.opacity = '1';
+            /* Restaura a opacidade (desfaz o esmaecimento) */
+            alert('Erro ao remover: ' + error.message);
+        } else {
+            /* Se deletou com sucesso */
+            if (el) el.remove();
+            /* Remove o elemento HTML da página imediatamente */
+
+            allTasks = allTasks.filter(t => t.id != id);
+            /*
+              .filter() cria um novo array sem a tarefa deletada.
+              t.id != id → mantém todas as tarefas EXCETO a que tem o id deletado
+              O array global é atualizado para manter sincronia
+            */
+
+            renderCalendar();
+            /* Atualiza o calendário (remove a tarefa dele também) */
+        }
+    }
+
+
+/* ─────────────────────────────────────────────────────────────────
+   CALENDÁRIO
+   ───────────────────────────────────────────────────────────────── */
+
+    function calPrev() {
+        /* Navega para o mês anterior */
+        calMonth--;
+        /* Decrementa o mês (ex: de 4 para 3) */
+
+        if (calMonth < 0) {
+            /* Se passou de janeiro (0) para -1, vai para dezembro do ano anterior */
+            calMonth = 11; /* dezembro */
+            calYear--;     /* ano anterior */
+        }
+        renderCalendar(); /* Redesenha o calendário */
+    }
+
+    function calNext() {
+        /* Navega para o próximo mês */
+        calMonth++;
+        /* Incrementa o mês */
+
+        if (calMonth > 11) {
+            /* Se passou de dezembro (11) para 12, vai para janeiro do próximo ano */
+            calMonth = 0; /* janeiro */
+            calYear++;    /* próximo ano */
+        }
+        renderCalendar();
+    }
+
+    function renderCalendar() {
+        /*
+          Desenha o calendário completo do mês atual.
+          Chamada ao trocar de mês ou quando as tarefas mudam.
+        */
+
+        // Nomes dos meses em português (índice 0 = Janeiro)
+        const months = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+        const label = document.getElementById('cal-month-label');
+        /* Elemento onde o nome do mês e ano são exibidos */
+
+        const grid  = document.getElementById('cal-grid');
+        /* Elemento onde as células dos dias são inseridas */
+
+        if (!label || !grid) return;
+        /* Segurança: se algum elemento não existir, para a função (evita erros) */
+
+        label.textContent = months[calMonth] + ' ' + calYear;
+        /* Atualiza o texto: ex: "Abril 2025" */
+
+        const firstDay    = new Date(calYear, calMonth, 1).getDay();
+        /*
+          new Date(ano, mes, 1) = primeiro dia do mês
+          .getDay() = dia da semana desse primeiro dia (0=Dom, 1=Seg, ..., 6=Sáb)
+          Usado para saber quantas células vazias colocar antes do dia 1
+        */
+
+        const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+        /*
+          new Date(ano, mes+1, 0) = dia zero do próximo mês = último dia do mês atual
+          .getDate() = o número desse último dia = total de dias no mês (28, 29, 30 ou 31)
+        */
+
+        const now = new Date();
+        /* Data atual para identificar o dia de hoje */
+
+        let cells = '';
+        /* String que vai acumular o HTML de todas as células */
+
+        // Células vazias antes do dia 1 (para alinhar com o dia da semana correto)
+        for (let i = 0; i < firstDay; i++) {
+            cells += '<div class="cal-cell" style="background:transparent;border-color:transparent"></div>';
+            /* Células invisíveis que ocupam o espaço das colunas antes do dia 1 */
+        }
+
+        // Células para cada dia do mês
+        for (let d = 1; d <= daysInMonth; d++) {
+
+            const dateStr = calYear + '-' + String(calMonth + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+            /*
+              Monta a string de data no formato ISO: "2025-04-05"
+              String(...).padStart(2, '0') → adiciona zero à esquerda se necessário
+              Exemplo: mês 4 → "04", dia 5 → "05"
+              Isso é necessário para comparar com os prazos das tarefas
+            */
+
+            const isToday = (calYear === now.getFullYear() && calMonth === now.getMonth() && d === now.getDate());
+            /*
+              Verifica se este dia é o dia de hoje.
+              Compara ano, mês e dia individualmente.
+              Resultado: true ou false
+            */
+
+            const dayTasks = allTasks.filter(t => t.prazo && t.prazo.startsWith(dateStr));
+            /*
+              Filtra as tarefas que têm prazo neste dia.
+              t.prazo && → garante que a tarefa tem prazo (não é null)
+              t.prazo.startsWith(dateStr) → o prazo começa com a data do dia
+              (startsWith porque o prazo pode ter hora: "2025-04-05T00:00:00")
+            */
+
+            // Monta as tarefas miniatura dentro da célula
+            let taskHtml = dayTasks.slice(0, 3).map(t => {
+                /*
+                  .slice(0, 3) → pega no máximo 3 tarefas para mostrar
+                  .map() → transforma cada tarefa em HTML
+                */
+                const imp = scoreParaLabel(calcularScore(t));
+                /* Calcula a importância para colorir a tarefa no calendário */
+
+                return `<div class="cal-task ${imp}" title="${t.titulo}">${t.titulo}</div>`;
+                /* title="${t.titulo}" = tooltip com o nome completo ao passar o mouse */
+            }).join('');
+            /* .join('') → junta todos os HTMLs em uma única string */
+
+            if (dayTasks.length > 3) {
+                taskHtml += `<div style="font-size:10px;color:#555">+${dayTasks.length - 3}</div>`;
+                /* Se há mais de 3 tarefas, mostra quantas não estão sendo exibidas (ex: "+2") */
+            }
+
+            // Monta o HTML da célula do dia
+            cells += `<div class="cal-cell clickable${isToday ? ' today' : ''}" onclick="openDayModal('${dateStr}')">
+                <div class="day-num">${d}</div>
+                ${taskHtml}
+            </div>`;
+            /*
+              isToday ? ' today' : '' → adiciona a classe 'today' (borda roxa) se for hoje
+              d = número do dia
+              taskHtml = as tarefas miniatura (ou vazio se não houver)
+            */
+        }
+
+        grid.innerHTML = cells;
+        /* Insere todo o HTML gerado na grade do calendário */
+    }
+
+
+/* ─────────────────────────────────────────────────────────────────
+   INICIALIZAÇÃO
+   Executado quando a página termina de carregar
+   ───────────────────────────────────────────────────────────────── */
+
+   /* ─────────────────────────────────────────────────────────────────
+   MODAL DE DIA
+   ───────────────────────────────────────────────────────────────── */
+
+    var selectedDateISO = null;
+    // Guarda a data do dia clicado no formato "AAAA-MM-DD"
+    // Usada na hora de salvar a tarefa com o prazo correto
+
+    function openDayModal(dateISO) {
+        /*
+        Abre o modal para o dia clicado.
+        dateISO = string no formato "2025-04-20"
+        */
+        selectedDateISO = dateISO;
+
+        // Formata a data para exibir no título do modal (ex: "Domingo, 20 de Abril de 2025")
+        const [ano, mes, dia] = dateISO.split('-').map(Number);
+        const dateObj = new Date(ano, mes - 1, dia);
+        // mes - 1 porque o JavaScript conta meses de 0 a 11
+
+        const titulo = dateObj.toLocaleDateString('pt-BR', {
+            weekday: 'long',   // nome do dia da semana por extenso
+            day: 'numeric',    // número do dia
+            month: 'long',     // nome do mês por extenso
+            year: 'numeric'    // ano com 4 dígitos
+        });
+        // Exemplo de resultado: "domingo, 20 de abril de 2025"
+
+        // Capitaliza a primeira letra
+        document.getElementById('modal-date-title').textContent =
+            titulo.charAt(0).toUpperCase() + titulo.slice(1);
+
+        // Preenche a lista de tarefas do dia
+        renderModalTasks(dateISO);
+
+        // Limpa o formulário de nova tarefa
+        document.getElementById('modal-titulo').value = '';
+        document.getElementById('modal-descricao').value = '';
+        document.getElementById('modal-prioridade').value = 'media';
+
+        // Abre o modal adicionando a classe "open"
+        document.getElementById('day-modal').classList.add('open');
+
+        // Foca automaticamente no campo de título para facilitar digitação
+        setTimeout(() => document.getElementById('modal-titulo').focus(), 100);
+        // setTimeout de 100ms aguarda a animação de abertura antes de focar
+    }
+
+    function closeModal() {
+        /* Fecha o modal removendo a classe "open" */
+        document.getElementById('day-modal').classList.remove('open');
+        selectedDateISO = null;
+        // Limpa a data selecionada para evitar uso acidental depois
+    }
+
+    function handleOverlayClick(event) {
+        /*
+        Fecha o modal se o usuário clicar no fundo escurecido
+        (mas NÃO fecha se clicar dentro do painel branco)
+        event.target = o elemento que foi clicado
+        */
+        if (event.target === document.getElementById('day-modal')) {
+            closeModal();
+            // Só fecha se clicou exatamente na overlay (fundo), não no painel interno
+        }
+    }
+
+    function renderModalTasks(dateISO) {
+        /*
+        Preenche a lista de tarefas do dia dentro do modal.
+        dateISO = "AAAA-MM-DD"
+        */
+        const container = document.getElementById('modal-task-list');
+
+        // Filtra as tarefas do dia a partir do array global
+        const dayTasks = allTasks.filter(t => t.prazo && t.prazo.startsWith(dateISO));
+
+        if (!dayTasks.length) {
+            container.innerHTML = '<div class="modal-empty">Nenhuma tarefa para este dia.</div>';
+            return;
+        }
+
+        // Ordena por importância (mais importante primeiro)
+        dayTasks.sort((a, b) => calcularScore(b) - calcularScore(a));
+
+        container.innerHTML = dayTasks.map(t => {
+            const score = calcularScore(t);
+            const imp   = scoreParaLabel(score);
+            // Reutiliza as mesmas funções de cálculo já existentes
+
+            return `
+                <div class="task-card" id="modal-item-${t.id}" style="margin:0">
+                    <div class="dot ${imp}"></div>
+                    <div class="task-body">
+                        <div class="task-title">${t.titulo}</div>
+                        ${t.descricao ? `<div class="task-desc">${t.descricao}</div>` : ''}
+                        <div class="task-meta">
+                            <span class="badge ${t.prioridade}">${t.prioridade}</span>
+                            <span class="badge ${imp}">importância: ${imp}</span>
+                        </div>
+                    </div>
+                    <button class="del-btn" onclick="removeTaskFromModal('${t.id}')" title="remover">✕</button>
+                </div>`;
+        }).join('');
+    }
+
+    async function removeTaskFromModal(id) {
+        /*
+        Remove uma tarefa pelo botão ✕ dentro do modal.
+        Depois atualiza tanto o modal quanto a lista principal.
+        */
+        const el = document.getElementById('modal-item-' + id);
+        if (el) el.style.opacity = '0.4';
+
+        const { error } = await deleteTarefa(id);
+
+        if (error) {
+            if (el) el.style.opacity = '1';
+            alert('Erro ao remover: ' + error.message);
+        } else {
+            // Remove da lista global
+            allTasks = allTasks.filter(t => t.id != id);
+            // Re-renderiza as tarefas do modal com a lista atualizada
+            renderModalTasks(selectedDateISO);
+            // Atualiza a lista principal e o calendário em segundo plano
+            renderList(allTasks);
+            renderCalendar();
+        }
+    }
+
+    async function salvarTarefaModal() {
+        /*
+        Salva uma nova tarefa a partir do formulário do modal.
+        O prazo já vem preenchido com o dia clicado (selectedDateISO).
+        */
+        const titulo    = document.getElementById('modal-titulo').value.trim();
+        const descricao = document.getElementById('modal-descricao').value.trim();
+        const prioridade = document.getElementById('modal-prioridade').value;
+
+        if (!titulo) {
+            // Destaca o campo de título se estiver vazio
+            document.getElementById('modal-titulo').focus();
+            document.getElementById('modal-titulo').style.borderColor = '#e24b4a';
+            setTimeout(() => {
+                document.getElementById('modal-titulo').style.borderColor = '';
+            }, 1500); // volta ao normal após 1.5 segundos
+            return;
+        }
+
+        // Desabilita o botão enquanto salva para evitar cliques duplos
+        const btn = document.getElementById('modal-save-btn');
+        btn.disabled = true;
+        btn.textContent = 'Salvando...';
+
+        const { data } = await supabaseClient.auth.getUser();
+        const user = data.user;
+
+        if (!user) {
+            alert('Você precisa estar logado!');
+            btn.disabled = false;
+            btn.textContent = 'Salvar';
+            return;
+        }
+
+        const { error } = await supabaseClient
+            .from('tarefas')
+            .insert([{
+                titulo,
+                descricao,
+                prioridade,
+                prazo: selectedDateISO,   // prazo = o dia que foi clicado no calendário
+                status: 'pendente',
+                user_id: user.id
+            }]);
+
+        btn.disabled = false;
+        btn.textContent = 'Salvar';
+
+        if (error) {
+            alert('Erro: ' + error.message);
+        } else {
+            // Limpa o formulário
+            document.getElementById('modal-titulo').value = '';
+            document.getElementById('modal-descricao').value = '';
+            document.getElementById('modal-prioridade').value = 'media';
+
+            // Recarrega tudo do banco para manter sincronizado
+            const { data: novasTarefas } = await fetchTarefas();
+            allTasks = novasTarefas || [];
+
+            // Atualiza modal, lista e calendário
+            renderModalTasks(selectedDateISO);
+            renderList(allTasks);
+            renderCalendar();
+        }
+    }
+
+    // Fecha o modal com a tecla Escape
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closeModal();
+    });
+
+    loadList();
+    /*
+      Chama a função principal: busca as tarefas no banco e renderiza tudo.
+      Esta é a "partida" da aplicação — tudo começa aqui.
+    */
+
+</script>
+</body>
+</html>
