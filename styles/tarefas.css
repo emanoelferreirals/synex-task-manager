@@ -42,7 +42,9 @@
             /* Cor do texto padrão de TODA a página: cinza claro.
                Qualquer texto sem cor definida herda esta. */
 
-            height: 100vh;
+            height: auto;
+
+            min-height: 100vh;
             /* vh = "viewport height" (altura da janela do navegador).
                100vh = ocupa 100% da altura visível da tela.
                Garante que a página preencha a janela inteira sem precisar rolar o body. */
@@ -63,7 +65,8 @@
             /* Mesmo sistema do body: organiza filhos em coluna.
                Os filhos são: .tabs (abas), as .views (painéis de conteúdo) e .chat-bar (rodapé). */
 
-            height: 100%;
+            height: auto;
+            min-height: 100vh;
             /* Ocupa 100% da altura do body (que já é 100vh).
                Isso faz o .shell preencher toda a tela verticalmente. */
 
@@ -696,6 +699,9 @@
 
             opacity: 1;
             /* Totalmente visível */
+
+            overflow-y: visible; 
+            /* Se o conteúdo for muito alto, permite rolagem dentro do painel */
         }
 
 
