@@ -163,13 +163,19 @@ async function fetchTarefas() {
 }
 
 async function deleteTarefa(id) {
+
+    /* A função foi mudada temporariamente para chamar arquivarTarefa(id) em vez de deletar diretamente.*/
+    arquivarTarefa(id);
+
     /* Remove permanentemente um registro da tabela.
        Parâmetro: id = o identificador único (UUID ou número) da tarefa */
 
+       /* IMPORTANTE: esta ação é IRREVERSÍVEL. Use apenas para deletar tarefas arquivadas
     return await supabaseClient
         .from('tarefas')
-        .delete()           /* operação de remoção */
-        .eq('id', id);      /* WHERE id = id (filtra o registro específico) */
+        .delete()           //operação de remoção 
+        .eq('id', id);      // WHERE id = id (filtra o registro específico) 
+    */
 }
 
 async function updateTarefa(id, campos) {
@@ -337,15 +343,24 @@ function renderList(tasks) {
         return;
     }
 
-    tasks.sort((a, b) => calcularScore(b) - calcularScore(a));
-    /* .sort() ordena o array no lugar (modifica o original).
-       A função comparadora:
-         → resultado positivo = b vem antes de a
-         → calcularScore(b) - calcularScore(a): score maior = valor positivo = b na frente
-       Resultado: tarefas mais importantes aparecem primeiro. */
+    tasks.sort((a, b) => {
+        /* Critério 1: prazo (data mais próxima vem primeiro)
+           - Converte a string de data em ms a partir de agora
+           - Tarefas sem prazo recebem Infinity → sempre vão pro final */
+        const prazoA = a.prazo ? new Date(a.prazo) - new Date() : Infinity;
+        const prazoB = b.prazo ? new Date(b.prazo) - new Date() : Infinity;
+
+        if (prazoA !== prazoB) return prazoA - prazoB;
+        /* Se os prazos forem diferentes, o mais próximo vem antes.
+           prazoA - prazoB: valor menor (mais próximo) = negativo = a na frente */
+
+        /* Critério 2 (mesmo prazo ou ambas sem prazo): score de importância
+           Score maior = valor positivo = b na frente */
+        return calcularScore(b) - calcularScore(a);
+    });
 
     const now = new Date();
-    let html = '<div class="section-label">por importância</div>';
+    let html = '<div class="section-label">por prazo</div>';
     /* Começa o HTML com o rótulo de seção e vai concatenando os cartões */
 
     tasks.forEach(t => {
